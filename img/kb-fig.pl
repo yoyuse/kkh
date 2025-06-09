@@ -1,12 +1,8 @@
 #!/usr/bin/env perl
 
-# usage: PERL5LIB="$HOME/.perl5/lib/perl5:$PERL5LIB" perl kb-fig.pl < kana106.json > kana106.svg
+# usage: perl kb-fig.pl < kb-cana-hhkb.json > kb-cana-hhkb.svg
 
-# 2025-06-06 kb-fig.pl from kb106fig.pl
-# ----
-# 2025-04-09 kb106fig.pl from wim-jus.pl
-# ----
-# 2024-06-27 from wmacs.pl
+# 2025-06-09
 
 # --------------------------------------------------------------------
 # use
@@ -22,8 +18,8 @@ use warnings;
 # --------------------------------------------------------------------
 # encode/decode
 
-sub enc($) {encode("utf-8", shift);}
-sub dec($) {decode("utf-8", shift);}
+sub enc($) { encode("utf-8", shift); }
+sub dec($) { decode("utf-8", shift); }
 
 # --------------------------------------------------------------------
 # json
@@ -53,13 +49,11 @@ sub do_svg() {
 
     $svg = SVG->new(width => $canvasWidth, height => $canvasHeight);
 
-    $svg->rectangle(x => 0, y => 0, width => $canvasWidth, height => $canvasHeight, rx => 5, ry => 5, style => {"fill" => "#eeeeee"});
+    $svg->rectangle(x => 0, y => 0, width => $canvasWidth, height => $canvasHeight, rx => 5, ry => 5, style => { "fill" => "#eeeeee" });
 
     my $fontSize = "${g_fontSize}px";
-    # my $fontFamily = "sans-serif";
     my $fontFamily = "system-ui";
-    # $g = $svg->group(transform => "translate($kbdMarginH, $kbdMarginV)", style => {"font-family" => $fontFamily, "font-size" => $fontSize, "fill" => "#000000"});
-    $g = $svg->group(transform => "translate($kbdMarginH, $kbdMarginV)", style => {"font-family" => $fontFamily, "font-size" => $fontSize});
+    $g = $svg->group(transform => "translate($kbdMarginH, $kbdMarginV)", style => { "font-family" => $fontFamily, "font-size" => $fontSize });
 
     my $row = 4;
     for (@g_obj) {
@@ -68,25 +62,19 @@ sub do_svg() {
         my $x = 0;
         my $wd = 1;
         my $ht = 1;
-        # my $c = undef;
         for (@ary) {
             if (ref($_) eq "HASH") {
                 $x = $_->{"x"} || 0;
                 $wd = $_->{"w"} if $_->{"w"};
                 $ht = $_->{"h"} if $_->{"h"};
-                # $c = $_->{"c"} if $_->{"c"};
                 next;
             }
             my @a = split("\n", $_);
             $_ = \@a;
-            # &svg_putKey($g, $_, $row, $col, $wd);
             &svg_putKey($g, $_, $row, $col + $x, $wd, $ht);
-            # $col += $wd;
             $col += $x + $wd;
-            # $x = 0;
             $wd = 1;
             $ht = 1;
-            # $c = undef;
         }
         $row -= 1;
     }
@@ -123,11 +111,11 @@ sub svg_key($$$;\@$$$$) {
     $y = (4 - $row) * $u + 0.5;
     $w = $wd * $u - $m;
     $h = $ht * $u - $m;
-    $g->rectangle(x => $x, y =>$y, width => $w, height => $h, rx => 5, ry => 5, style => {"fill" => $bg2, "stroke" => "#000000", "stroke-width" => 1});
+    $g->rectangle(x => $x, y =>$y, width => $w, height => $h, rx => 5, ry => 5, style => { "fill" => $bg2, "stroke" => "#000000", "stroke-width" => 1 });
     #
     if ($ht == 2) {
-        $g->rectangle(x => $x - $u * 0.25, y =>$y, width => $w + $u * 0.25, height => $u - $m, rx => 5, ry => 5, style => {"fill" => $bg2, "stroke" => "#000000", "stroke-width" => 1});
-        $g->rectangle(x => $x + 0.5, y =>$y + 0.5, width => $w - 1, height => $h - 1, rx => 5, ry => 5, style => {"fill" => $bg2, "stroke" => "none", "stroke-width" => 1});
+        $g->rectangle(x => $x - $u * 0.25, y =>$y, width => $w + $u * 0.25, height => $u - $m, rx => 5, ry => 5, style => { "fill" => $bg2, "stroke" => "#000000", "stroke-width" => 1 });
+        $g->rectangle(x => $x + 0.5, y =>$y + 0.5, width => $w - 1, height => $h - 1, rx => 5, ry => 5, style => { "fill" => $bg2, "stroke" => "none", "stroke-width" => 1 });
     }
     #
     my $p = ($g_keySizeUnit - $g_keySizeUnit1) / 2;
@@ -136,10 +124,10 @@ sub svg_key($$$;\@$$$$) {
     $w = $wd * $u - $m - $p * 2;
     $h = $g_keySizeUnit1 + ($ht == 2 ? $g_keySizeUnit : 0);
     if ($bg1 && $bg1 ne "none") {
-        $g->rectangle(x => $x, y => $y, width => $w, height => $h, rx => 3, ry => 3, style => {"fill" => $bg1});
+        $g->rectangle(x => $x, y => $y, width => $w, height => $h, rx => 3, ry => 3, style => { "fill" => $bg1 });
         #
         if ($ht == 2) {
-            $g->rectangle(x => $x - $u * 0.25, y => $y, width => $w + $u * 0.25, height => $g_keySizeUnit1, rx => 3, ry => 3, style => {"fill" => $bg1});
+            $g->rectangle(x => $x - $u * 0.25, y => $y, width => $w + $u * 0.25, height => $g_keySizeUnit1, rx => 3, ry => 3, style => { "fill" => $bg1 });
         }
         #
     }
@@ -161,6 +149,6 @@ sub svg_key($$$;\@$$$$) {
 }
 
 # --------------------------------------------------------------------
-# 出力
+# output
 
 &do_svg();
