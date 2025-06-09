@@ -41,8 +41,8 @@
 ;;; Setup:
 
 ;; (when (require 'cana nil t)
-;;   ;; (setq cana-cursor-color-use-color t)
-;;   ;; (setq ckc-show-conversion-list-count 2)
+;;   ;; Teal 400
+;;   (setq cana-cursor-color "#26A69A")
 ;;   (setq default-input-method "cana"))
 
 ;;; Code:
@@ -1202,25 +1202,18 @@ and change the current conversion to the last one in the group."
 
 ;;; cursor color
 
-(defvar cana-cursor-color-use-color nil)
+(defvar cana-cursor-color nil
+  "cana モード時のカーソル色を表す文字列.
+`nil' なら, カーソル色を変更しない.")
 
 (defvar cana-cursor-color-default
   (cdr (assq 'cursor-color (frame-parameters (selected-frame)))))
 
-(defun cana-cursor-color ()
-  (cond
-   ((equal current-input-method "cana") "#26A69A") ; Teal 400
-   (t cana-cursor-color-default)))
-
 (defun cana-cursor-color-set-color ()
-  (when cana-cursor-color-use-color
-    (let* ((light-dark (frame-parameter nil 'background-mode))
-           (light-mode (eq light-dark 'light))
-           (color (cana-cursor-color))
-           (color (if (consp color)
-                      (if light-mode (car color) (cdr color))
-                    color)))
-      (set-cursor-color color))))
+  (cond ((null cana-cursor-color) nil)
+        ((and cana-cursor-color (equal current-input-method "cana"))
+         (set-cursor-color cana-cursor-color))
+        (t (set-cursor-color cana-cursor-color-default))))
 
 (add-hook 'post-command-hook 'cana-cursor-color-set-color)
 
