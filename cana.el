@@ -41,9 +41,11 @@
 ;;; Setup:
 
 ;; (when (require 'cana nil t)
-;;   ;; Teal 400
+;;   (setq default-input-method "cana")
+;;   ;; カーソル色を Teal 400 に
 ;;   (setq cana-cursor-color "#26A69A")
-;;   (setq default-input-method "cana"))
+;;   ;; C-変換 で再変換
+;;   (define-key global-map (kbd "C-<henkan>") 'cana-reconvert))
 
 ;;; Code:
 
@@ -1231,6 +1233,45 @@ and change the current conversion to the last one in the group."
                           (overlay-end ckc-overlay-head))
     (goto-char (overlay-end ckc-overlay-tail))
     (ckc-next-phrase)))
+
+;;; reconvert
+
+(defvar cana-backward-scan-pattern
+  (concat "\\("
+          (mapconcat (lambda (s) (regexp-quote s))
+                     (mapcar (lambda (rule) (car rule)) cana-rules)
+                     "\\|")
+          "\\)+$")
+  "再変換の対象となる部分文字列にマッチする正規表現.")
+
+(defun cana-backward-scan-roman (str)
+  "STR を末尾から先頭方向にスキャンして, 再変換の対象となる部分文字列を返す
+(`cana-backward-scan-pattern' を参照).
+変換すべき文字列がないときは, nil を返す."
+  (let ((case-fold-search nil))
+    (save-match-data
+      (if (string-match cana-backward-scan-pattern str)
+          (match-string-no-properties 0 str)
+        nil))))
+
+(defun cana-reconvert (&optional convert-roman-to-kanji-inverse-p)
+  "バッファ内の文字列に対して `ckc-region' を使って再変換を行う.
+リージョンがアクティブのときは, そのリージョンを変換する.
+そうでなければ, カーソルの左の対象文字列を変換する
+(`cana-backward-scan-roman' を参照).
+CONVERT-ROMAN-TO-KANJI-INVERSE-P が非 nil のときは,
+`cana-convert-roman-to-kanji' の値を一時的に反転して変換を行う."
+  (interactive "P")
+  (let ((convert-roman-to-kanji (if convert-roman-to-kanji-inverse-p
+                                    (not cana-convert-roman-to-kanji)
+                                  cana-convert-roman-to-kanji)))
+    (if (use-region-p)
+        (ckc-region (region-beginning) (region-end) convert-roman-to-kanji)
+      (let* ((str (buffer-substring (point-at-bol) (point)))
+             (roman (cana-backward-scan-roman str)))
+        (when roman
+          (ckc-region (- (point) (length roman)) (point)
+                      convert-roman-to-kanji))))))
 
 ;;; cursor color
 
