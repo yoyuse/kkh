@@ -120,8 +120,10 @@
     ("~m" "″") ("~M" "〓")
     ("~," "‥") ("~<" "≦")
     ("~." "…") ("~>" "≧")
-    ("~/" "／") ("~?" "∞")))           ; 全角スラッシュ
+    ("~/" "／") ("~?" "∞"))            ; 全角スラッシュ
+  "ASCII 文字列とかなの対応の連想配列.")
 
+;; ASCII 文字列の長さで降順ソートしておく
 (setq cana-rules
       (sort cana-rules
             (lambda (a b) (< (length (car b)) (length (car a))))))
@@ -131,9 +133,11 @@
           (mapconcat (lambda (s) (regexp-quote s))
                      (mapcar (lambda (rule) (car rule)) cana-rules)
                      "\\|")
-          "\\)\\(.*\\)"))
+          "\\)\\(.*\\)")
+  "かなに変換する ASCII 文字列の正規表現.")
 
 (defun cana-to-kana (str)
+  "ASCII 文字列 STR をかなに変換した新しい文字列を返す."
   (let ((case-fold-search nil))
     (save-match-data
       (while (string-match cana-rules-pattern str)
@@ -143,16 +147,19 @@
       str)))
 
 (defvar cana-special-rules
-  '(("ゎ" "ﾜﾟ") ("ゐ" "ｲﾟ") ("ゑ" "ｴﾟ") ("ヵ" "ｶﾟ") ("ヶ" "ｹﾟ")))
+  '(("ゎ" "ﾜﾟ") ("ゐ" "ｲﾟ") ("ゑ" "ｴﾟ") ("ヵ" "ｶﾟ") ("ヶ" "ｹﾟ"))
+  "全角ひらがなと半角カナの便宜的な対応の連想配列.")
 
 (defvar cana-special-rules-pattern
   (concat "\\(.*?\\)\\("
           (mapconcat (lambda (s) (regexp-quote s))
                      (mapcar (lambda (rule) (car rule)) cana-special-rules)
                      "\\|")
-          "\\)\\(.*\\)"))
+          "\\)\\(.*\\)")
+  "半角カナに便宜的に変換するかなの正規表現.")
 
 (defun cana-special (str)
+  "STR 中の全角ひらがなを半角カナに便宜的に変換した新しい文字列を返す."
   (let ((case-fold-search nil))
     (save-match-data
       (while (string-match cana-special-rules-pattern str)
@@ -162,15 +169,19 @@
       str)))
 
 (defun cana-to-hiragana (str)
+  "STR をひらがな文字列に変換した新しい文字列を返す."
   (cana-to-kana str))
 
 (defun cana-to-katakana (str)
+  "STR をカタカナ文字列に変換した新しい文字列を返す."
   (japanese-katakana (cana-to-kana str)))
 
 (defun cana-to-zenkaku (str)
+  "STR を全角英字変換した新しい文字列を返す."
   (japanese-zenkaku str))
 
 (defun cana-to-hankaku (str)
+  "STR を半角カナ変換した新しい文字列を返す."
   (japanese-hankaku (cana-special (cana-to-kana str))))
 
 ;;
@@ -225,26 +236,31 @@
 ;;
 
 (defun quail-cana-commit-hiragana ()
+  "ひらがなに確定する."
   (interactive)
   (setq quail-conversion-str (cana-to-hiragana quail-conversion-str))
   (quail-no-conversion))
 
 (defun quail-cana-commit-katakana ()
+  "カタカナに確定する."
   (interactive)
   (setq quail-conversion-str (cana-to-katakana quail-conversion-str))
   (quail-no-conversion))
 
 (defun quail-cana-commit-zenkaku ()
+  "全角英字に確定する."
   (interactive)
   (setq quail-conversion-str (cana-to-zenkaku quail-conversion-str))
   (quail-no-conversion))
 
 (defun quail-cana-commit-hankaku ()
+  "半角カナに確定する."
   (interactive)
   (setq quail-conversion-str (cana-to-hankaku quail-conversion-str))
   (quail-no-conversion))
 
 (defun quail-cana-cancel ()
+  "変換をキャンセルし, 消去する."
   (interactive)
   (setq quail-conversion-str "")
   (quail-no-conversion))
@@ -252,12 +268,14 @@
 ;;
 
 (defun quail-cana-hiragana-region (from to)
+  "FROM から TO までのリージョンをひらがなに変換して置換する."
   (interactive "r")
   (let* ((roman (buffer-substring from to))
          (hiragana (cana-to-hiragana roman)))
     (japanese-replace-region from to hiragana)))
 
 (defun quail-cana-convert ()
+  "CKC (Cana Kanji Converter) により漢字に変換する."
   (interactive)
   (setq quail-translating nil)
   (let* ((start (overlay-start quail-conv-overlay))
@@ -289,20 +307,23 @@
       (set-marker from nil))))
 
 (defun quail-cana-insert-space ()
+  "読みとしての空白を挿入する."
   (interactive)
   (setq quail-current-key (concat quail-current-key " "))
   (or (catch 'quail-tag
         (quail-update-translation (quail-translate-key))
         t)
+      ;; If someone throws for `quail-tag' by value nil, we exit from
+      ;; translation mode.
       (setq quail-translating nil)))
 
+;; かな入力およびかな漢字変換による日本語入力メソッド
 (quail-define-package
  "cana" "Japanese" "か"
  nil
  "JIS kana input on US keyboard.
 "
- nil
- t t nil nil nil nil nil
+ nil t t nil nil nil nil nil
  #'quail-cana-update-translation
  '(("\C-g" . quail-cana-cancel)
    ("\C-j" . quail-cana-convert)
@@ -316,11 +337,13 @@
    ([?\S- ] . quail-cana-insert-space))
  t)
 
+;; 空白を除く ASCII 文字 [!-~] キーで, その文字自身を入力
 (let ((c 33))                           ; (c 32)
   (while (< c 127)
     (quail-defrule (char-to-string c) (char-to-string c))
     (setq c (1+ c))))
 
+;; Update Quail translation region.
 (defun quail-cana-update-translation (control-flag)
   (cond ((null control-flag)
          (setq quail-current-str (or quail-current-str quail-current-key)))
@@ -336,9 +359,11 @@
 (require 'url-http)
 (require 'json)
 
-(defvar ckc-partial-cancel t)
+(defvar ckc-partial-cancel t
+  "非 nil なら, `ckc-cancel' のときに確定した文節を ASCII 文字列に戻さない.")
 
-(defvar ckc-select-to-commit t)
+(defvar ckc-select-to-commit t
+  "非 nil なら, 候補リストから選択したあとに確定する.")
 
 (defun ckc-google-transliterate (string)
   "ひらがな文字列 STRING を Google Transliterate して結果をリストにして返す.
@@ -472,7 +497,8 @@ This string is shown at mode line when users are in CKC mode.")
 ;;; Internal variables used in CKC.
 
 ;;
-(defvar ckc-original-roman nil)
+(defvar ckc-original-roman nil
+  "変換対象のもとの ASCII 文字列.")
 ;; /
 
 ;; The current Kana string to be converted.
@@ -497,8 +523,8 @@ This string is shown at mode line when users are in CKC mode.")
 
 (defcustom ckc-show-conversion-list-count 4
   "Count of successive `ckc-next' or `ckc-prev' to show conversion list.
-When you type SPC or C-p successively this count while using the input
-method `japanese', the conversion candidates are shown in the echo
+When you type C-n or C-p successively this count while using the input
+method `cana', the conversion candidates are shown in the echo
 area while indicating the current selection by `<N>'."
   :group 'mule
   :type 'integer)
@@ -524,7 +550,8 @@ area while indicating the current selection by `<N>'."
 (defvar ckc-length-head nil)
 (defvar ckc-length-converted nil)
 ;;
-(defvar ckc-length-commit nil)
+(defvar ckc-length-commit nil
+  "確定した文字列の長さ.")
 ;; /
 
 ;; Cursor type (`box' or `bar') of the current frame.
@@ -612,7 +639,7 @@ POSTFIX と PREFER-NOUN は無視される."
 
 ;;;###autoload
 (defvar ckc-after-update-conversion-functions nil
-  "Functions to run after a conversion is selected in `japanese' input method.
+  "Functions to run after a conversion is selected in `cana' input method.
 With this input method, a user can select a proper conversion from
 candidate list.  Each time he changes the selection, functions in this
 list are called with two arguments; starting and ending buffer
@@ -1112,11 +1139,13 @@ and change the current conversion to the last one in the group."
 ;;
 
 (defun ckc-cana-hiragana ()
+  "ひらがなに確定する."
   (interactive)
   (ckc-hiragana)
   (ckc-next-phrase))
 
 (defun ckc-cana-katakana ()
+  "カタカナに確定する."
   (interactive)
   (ckc-katakana)
   (ckc-next-phrase))
@@ -1124,6 +1153,7 @@ and change the current conversion to the last one in the group."
 ;; hankaku/zenkaku
 
 (defun ckc-cana-to-hankaku ()
+  "半角カナに変換する."
   (interactive)
   (mapconcat
    #'(lambda (c) (japanese-hankaku (cana-special (char-to-string c))))
@@ -1133,6 +1163,7 @@ and change the current conversion to the last one in the group."
    ""))
 
 (defun ckc-cana-to-zenkaku ()
+  "全角英字に変換する."
   (interactive)
   (mapconcat
    #'(lambda (c)
@@ -1145,7 +1176,7 @@ and change the current conversion to the last one in the group."
    ""))
 
 (defun ckc-cana-hankaku ()
-  "Convert to hankaku."
+  "半角カナに確定する."
   (interactive)
   (goto-char (overlay-start ckc-overlay-head))
   (insert (ckc-cana-to-hankaku))
@@ -1158,7 +1189,7 @@ and change the current conversion to the last one in the group."
     (ckc-next-phrase)))
 
 (defun ckc-cana-zenkaku ()
-  "Convert to zenkaku."
+  "全角英字に確定する."
   (interactive)
   (goto-char (overlay-start ckc-overlay-head))
   (insert (ckc-cana-to-zenkaku))
@@ -1173,6 +1204,7 @@ and change the current conversion to the last one in the group."
 ;; roman
 
 (defun ckc-cana-to-roman (&optional current-key length-head)
+  "ASCII 文字列に変換する."
   (interactive)
   (let* ((ckc-current-key (if current-key current-key ckc-current-key))
          (ckc-length-head (if length-head length-head ckc-length-head)))
@@ -1188,7 +1220,7 @@ and change the current conversion to the last one in the group."
      "")))
 
 (defun ckc-cana-roman ()
-  "Convert to roman."
+  "ASCII 文字列に確定する."
   (interactive)
   (goto-char (overlay-start ckc-overlay-head))
   (insert (ckc-cana-to-roman))
@@ -1203,13 +1235,15 @@ and change the current conversion to the last one in the group."
 ;;; cursor color
 
 (defvar cana-cursor-color nil
-  "cana モード時のカーソル色を表す文字列.
-`nil' なら, カーソル色を変更しない.")
+  "cana モードのときのカーソル色を表す文字列.
+nil なら, カーソル色を変更しない.")
 
 (defvar cana-cursor-color-default
-  (cdr (assq 'cursor-color (frame-parameters (selected-frame)))))
+  (cdr (assq 'cursor-color (frame-parameters (selected-frame))))
+  "cana モードでないときのカーソル色を表す文字列.")
 
 (defun cana-cursor-color-set-color ()
+  "cana モードのときにカーソル色を `cana-cursor-color' に変更する."
   (cond ((null cana-cursor-color) nil)
         ((and cana-cursor-color (equal current-input-method "cana"))
          (set-cursor-color cana-cursor-color))
