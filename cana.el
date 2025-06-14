@@ -42,10 +42,14 @@
 
 ;; (when (require 'cana nil t)
 ;;   (setq default-input-method "cana")
+;;   (setq ckc-show-conversion-list-count 2)
 ;;   ;; カーソル色を Teal 400 に
 ;;   (setq cana-cursor-color "#26A69A")
 ;;   ;; C-変換 で再変換
-;;   (define-key global-map (kbd "C-<henkan>") 'cana-reconvert))
+;;   (define-key global-map (kbd "C-<henkan>") 'cana-reconvert)
+;;   (let ((map (quail-conversion-keymap)))
+;;     ;; C-無変換 でかなプレビューをトグル
+;;     (define-key map (kbd "C-<muhenkan>") 'cana-preview-toggle)))
 
 ;;; Code:
 
@@ -1272,6 +1276,78 @@ CONVERT-ROMAN-TO-KANJI-INVERSE-P が非 nil のときは,
         (when roman
           (ckc-region (- (point) (length roman)) (point)
                       convert-roman-to-kanji))))))
+
+;;; cana preview
+
+;; 空白を除く ASCII 文字 [!-~] キーに, quail-self-insert-command を割り当てる
+(let ((c 33))
+  (while (< c 127)
+    ;; (quail-defrule (char-to-string c) (char-to-string c))
+    (define-key (quail-conversion-keymap)
+      (char-to-string c) 'quail-self-insert-command)
+    (setq c (1+ c))))
+
+;;
+
+(defvar cana-preview-enabled-p t "非 nil なら, かなプレビューを有効化する.")
+
+(defvar cana-preview-face
+  '((t (:inherit popup-face
+                 :foreground "#424242"  ; Grey 800
+                 :background "#B2DFDB"  ; Teal 100
+                 :weight regular :slant normal
+                 :inverse-video nil
+                 :underline nil)))
+  "かなプレビューのポップアップのフェイス.")
+
+(defvar cana-preview-popup nil "ポップアップオブジェクト.")
+
+(defun cana-preview-hide ()
+  "かなプレビューを非表示にする."
+  (when (and (featurep 'popup)
+             (popup-live-p cana-preview-popup))
+    (popup-delete cana-preview-popup)))
+
+(defun cana-preview-show (&rest _arguments)
+  "`cana-preview-enabled-p' が非 nil なら, かなプレビューを表示する."
+  (when (equal current-input-method "cana")
+    (let* ((beg (overlay-start quail-conv-overlay))
+           (end (overlay-end quail-conv-overlay))
+           (str (and beg end (buffer-substring beg end))))
+      (cana-preview-hide)
+      (when str
+        (setq quail-conversion-str str)
+        (setq quail-current-str nil
+              quail-current-key nil)
+        (when (and (featurep 'popup)
+                   cana-preview-enabled-p)
+          (cana-preview-hide)
+          (setq cana-preview-popup (popup-tip (cana-to-kana str)
+                                              :face cana-preview-face
+                                              :height 1 :nowait t)))))))
+
+;;
+
+;; かなプレビューを表示・非表示するアドバイスとフック
+(dolist (fun '(quail-conversion-backward-delete-char
+               quail-conversion-delete-char
+               quail-self-insert-command
+               quail-cana-convert))
+  (advice-add fun :after #'cana-preview-show))
+
+(advice-add 'quail-cana-cancel :after #'cana-preview-hide)
+(advice-add 'quail-cana-convert :before #'cana-preview-hide)
+
+(add-hook 'post-command-hook #'cana-preview-hide)
+
+;;
+
+(defun cana-preview-toggle ()
+  "かなプレビューをトグルする."
+  (interactive)
+  (setq cana-preview-enabled-p (not cana-preview-enabled-p))
+  (message "Kana preview %s" (if cana-preview-enabled-p "on" "off"))
+  (cana-preview-show))
 
 ;;; cursor color
 
