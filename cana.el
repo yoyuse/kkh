@@ -202,7 +202,7 @@
 ;;     ;; (setq quail-conversion-str str)
 ;;     (message "<%S><%S>" str quail-conversion-str)
 ;;     (save-excursion ;; (goto-char start)
-;;                     (japanese-replace-region start end str)))
+;;                     (cana-replace-region start end str)))
 ;;   (setq quail-current-key nil)
 ;;   (setq quail-current-str nil))
 
@@ -215,7 +215,7 @@
 ;;          (roman (buffer-substring start end))
 ;;          (str (apply fn (list roman))))
 ;;     (save-excursion (goto-char start)
-;;                     (japanese-replace-region start end str))
+;;                     (cana-replace-region start end str))
 ;;     (setq quail-conversion-str str))
 ;;   (setq quail-current-key nil)
 ;;   (setq quail-current-str nil)
@@ -271,12 +271,20 @@
 
 ;;
 
+;; japanese-replace-region from japan-util.el.gz
+
+(defun cana-replace-region (from to string)
+  "Replace the region specified by FROM and TO to STRING."
+  (goto-char from)
+  (insert string)
+  (delete-char (- to from)))
+
 (defun quail-cana-hiragana-region (from to)
   "FROM から TO までのリージョンをひらがなに変換して置換する."
   (interactive "r")
   (let* ((roman (buffer-substring from to))
          (hiragana (cana-to-hiragana roman)))
-    (japanese-replace-region from to hiragana)))
+    (cana-replace-region from to hiragana)))
 
 (defun quail-cana-convert ()
   "CKC (Cana Kanji Converter) により漢字に変換する."
