@@ -57,8 +57,6 @@
 
 (require 'quail)
 
-(defvar cana-convert-roman-to-kanji t)
-
 (defvar cana-rules
   '(( "3" "あ") ( "e" "い") ( "4" "う") ( "5" "え") ( "6" "お")
     ( "t" "か") ( "g" "き") ( "h" "く") ( "'" "け") ( "b" "こ")
@@ -286,10 +284,6 @@
   (setq quail-translating nil)
   (let* ((start (overlay-start quail-conv-overlay))
          (end (overlay-end quail-conv-overlay)))
-    (when (not cana-convert-roman-to-kanji)
-      (save-excursion
-        (goto-char start)
-        (quail-cana-hiragana-region start end)))
     (setq quail-conversion-str
           (buffer-substring (overlay-start quail-conv-overlay)
                             (overlay-end quail-conv-overlay)))
@@ -301,10 +295,7 @@
     (quail-delete-overlays)
     (setq quail-current-str nil)
     (unwind-protect
-        ;; (let ((result (kkc-region from (+ from len))))
-        (let ((result (ckc-region from (+ from len)
-                                  cana-convert-roman-to-kanji)))
-          ;; /
+        (let ((result (ckc-region from (+ from len))))
           (move-overlay quail-conv-overlay from (point))
           (setq quail-conversion-str (buffer-substring from (point)))
           (if (= (+ from result) (point))
@@ -652,24 +643,19 @@ list are called with two arguments; starting and ending buffer
 positions that contains the current selection.")
 
 ;;;###autoload
-;; (defun ckc-region (from to)
-(defun ckc-region (from to &optional convert-roman-to-kanji)
-  ;; /
+(defun ckc-region (from to)
   "Convert Kana string in the current region to Kanji-Kana mixed string.
 Users can select a desirable conversion interactively.
 When called from a program, expects two arguments,
 positions FROM and TO (integers or markers) specifying the target region.
 When it returns, the point is at the tail of the selected conversion,
 and the return value is the length of the conversion."
-  ;; (interactive "r")
-  (interactive "r\nP")
+  (interactive "r")
   (setq ckc-original-roman (buffer-substring from to))
-  (when convert-roman-to-kanji
-    (save-excursion
-      (goto-char from)
-      (quail-cana-hiragana-region from to)
-      (setq to (point))))
-  ;; /
+  (save-excursion
+    (goto-char from)
+    (quail-cana-hiragana-region from to)
+    (setq to (point)))
   (setq ckc-original-kana (buffer-substring from to))
   (goto-char from)
 
@@ -759,8 +745,7 @@ and the return value is the length of the conversion."
   ;; (insert ckc-original-kana)
   ;; XXX
   (if ckc-partial-cancel
-      (insert
-       (if cana-convert-roman-to-kanji (ckc-cana-to-roman) ckc-original-kana))
+      (insert (ckc-cana-to-roman))
     (delete-region (- (point) ckc-length-commit) (point))
     (insert ckc-original-roman))
   ;; /
@@ -1258,24 +1243,18 @@ and change the current conversion to the last one in the group."
           (match-string-no-properties 0 str)
         nil))))
 
-(defun cana-reconvert (&optional convert-roman-to-kanji-inverse-p)
+(defun cana-reconvert ()
   "バッファ内の文字列に対して `ckc-region' を使って再変換を行う.
 リージョンがアクティブのときは, そのリージョンを変換する.
 そうでなければ, カーソルの左の対象文字列を変換する
-(`cana-backward-scan-roman' を参照).
-CONVERT-ROMAN-TO-KANJI-INVERSE-P が非 nil のときは,
-`cana-convert-roman-to-kanji' の値を一時的に反転して変換を行う."
-  (interactive "P")
-  (let ((convert-roman-to-kanji (if convert-roman-to-kanji-inverse-p
-                                    (not cana-convert-roman-to-kanji)
-                                  cana-convert-roman-to-kanji)))
-    (if (use-region-p)
-        (ckc-region (region-beginning) (region-end) convert-roman-to-kanji)
-      (let* ((str (buffer-substring (point-at-bol) (point)))
-             (roman (cana-backward-scan-roman str)))
-        (when roman
-          (ckc-region (- (point) (length roman)) (point)
-                      convert-roman-to-kanji))))))
+(`cana-backward-scan-roman' を参照)."
+  (interactive)
+  (if (use-region-p)
+      (ckc-region (region-beginning) (region-end))
+    (let* ((str (buffer-substring (point-at-bol) (point)))
+           (roman (cana-backward-scan-roman str)))
+      (when roman
+        (ckc-region (- (point) (length roman)) (point))))))
 
 ;;; cana preview
 
