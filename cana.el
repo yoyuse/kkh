@@ -42,14 +42,16 @@
 
 ;; (when (require 'cana nil t)
 ;;   (setq default-input-method "cana")
-;;   (setq ckc-show-conversion-list-count 2)
+;;   ;; 次候補キー 2 回で候補リストを表示
+;;   ;; (setq ckc-show-conversion-list-count 2)
 ;;   ;; カーソル色を Teal 400 に
-;;   (setq cana-cursor-color "#26A69A")
+;;   ;; (setq cana-cursor-color "#26A69A")
 ;;   ;; C-変換 で再変換
-;;   (define-key global-map (kbd "C-<henkan>") 'cana-reconvert)
-;;   (let ((map (quail-conversion-keymap)))
-;;     ;; C-無変換 でかなプレビューをトグル
-;;     (define-key map (kbd "C-<muhenkan>") 'cana-preview-toggle)))
+;;   ;; (define-key global-map (kbd "C-<henkan>") 'cana-reconvert)
+;;   ;; C-無変換 でかなプレビューをトグル
+;;   ;; (let ((map (quail-conversion-keymap)))
+;;   ;;   (define-key map (kbd "C-<muhenkan>") 'cana-preview-toggle))
+;;   )
 
 ;;; Code:
 
