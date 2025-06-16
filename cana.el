@@ -1280,7 +1280,7 @@ and change the current conversion to the last one in the group."
 
 (defvar cana-preview-enabled-p t "非 nil なら, かなプレビューを有効化する.")
 
-(defvar cana-preview-face
+(defface cana-preview-face
   '((t (:inherit popup-face
                  :foreground "#424242"  ; Grey 800
                  :background "#B2DFDB"  ; Teal 100
@@ -1312,7 +1312,7 @@ and change the current conversion to the last one in the group."
                    cana-preview-enabled-p)
           (cana-preview-hide)
           (setq cana-preview-popup (popup-tip (cana-to-kana str)
-                                              :face cana-preview-face
+                                              :face 'cana-preview-face
                                               :height 1 :nowait t)))))))
 
 ;;
