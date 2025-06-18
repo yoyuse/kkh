@@ -197,10 +197,10 @@
 ;;   (setq quail-translating nil)
 ;;   (let* ((start (overlay-start quail-conv-overlay))
 ;;          (end (overlay-end quail-conv-overlay))
-;;          (roman (buffer-substring start end))
+;;          (ascii (buffer-substring start end))
 ;;          (hankaku (cana-to-hankaku quail-conversion-str))
 ;;          (zenkaku (cana-to-zenkaku quail-conversion-str))
-;;          (str (if (not (string= hankaku roman)) hankaku zenkaku)))
+;;          (str (if (not (string= hankaku ascii)) hankaku zenkaku)))
 ;;     ;; (setq quail-conversion-str str)
 ;;     (message "<%S><%S>" str quail-conversion-str)
 ;;     (save-excursion ;; (goto-char start)
@@ -214,8 +214,8 @@
 ;;   (setq quail-translating nil)
 ;;   (let* ((start (overlay-start quail-conv-overlay))
 ;;          (end (overlay-end quail-conv-overlay))
-;;          (roman (buffer-substring start end))
-;;          (str (apply fn (list roman))))
+;;          (ascii (buffer-substring start end))
+;;          (str (apply fn (list ascii))))
 ;;     (save-excursion (goto-char start)
 ;;                     (cana-replace-region start end str))
 ;;     (setq quail-conversion-str str))
@@ -284,8 +284,8 @@
 (defun quail-cana-hiragana-region (from to)
   "FROM から TO までのリージョンをひらがなに変換して置換する."
   (interactive "r")
-  (let* ((roman (buffer-substring from to))
-         (hiragana (cana-to-hiragana roman)))
+  (let* ((ascii (buffer-substring from to))
+         (hiragana (cana-to-hiragana ascii)))
     (cana-replace-region from to hiragana)))
 
 (defun quail-cana-convert ()
@@ -492,7 +492,7 @@ This string is shown at mode line when users are in CKC mode.")
     (define-key map "\C-g" 'ckc-cancel)
     (define-key map "\C-j" 'ckc-terminate)
     (define-key map "\C-k" 'ckc-cana-katakana)
-    (define-key map "\C-l" 'ckc-cana-roman)
+    (define-key map "\C-l" 'ckc-cana-ascii)
     (define-key map "\C-o" 'ckc-cana-hankaku)
     (define-key map "\C-u" 'ckc-cana-hiragana)
     (define-key map "\C-t" 'ckc-cana-zenkaku)
@@ -504,7 +504,7 @@ This string is shown at mode line when users are in CKC mode.")
 ;;; Internal variables used in CKC.
 
 ;;
-(defvar ckc-original-roman nil
+(defvar ckc-original-ascii nil
   "変換対象のもとの ASCII 文字列.")
 ;; /
 
@@ -661,7 +661,7 @@ positions FROM and TO (integers or markers) specifying the target region.
 When it returns, the point is at the tail of the selected conversion,
 and the return value is the length of the conversion."
   (interactive "r")
-  (setq ckc-original-roman (buffer-substring from to))
+  (setq ckc-original-ascii (buffer-substring from to))
   (save-excursion
     (goto-char from)
     (quail-cana-hiragana-region from to)
@@ -755,9 +755,9 @@ and the return value is the length of the conversion."
   ;; (insert ckc-original-kana)
   ;; XXX
   (if ckc-partial-cancel
-      (insert (ckc-cana-to-roman))
+      (insert (ckc-cana-to-ascii))
     (delete-region (- (point) ckc-length-commit) (point))
-    (insert ckc-original-roman))
+    (insert ckc-original-ascii))
   ;; /
   (setq ckc-converting nil))
 
@@ -1202,9 +1202,9 @@ and change the current conversion to the last one in the group."
     (goto-char (overlay-end ckc-overlay-tail))
     (ckc-next-phrase)))
 
-;; roman
+;; ascii
 
-(defun ckc-cana-to-roman (&optional current-key length-head)
+(defun ckc-cana-to-ascii (&optional current-key length-head)
   "ASCII 文字列に変換する."
   (interactive)
   (let* ((ckc-current-key (if current-key current-key ckc-current-key))
@@ -1220,11 +1220,11 @@ and change the current conversion to the last one in the group."
                  0 ckc-length-head))
      "")))
 
-(defun ckc-cana-roman ()
+(defun ckc-cana-ascii ()
   "ASCII 文字列に確定する."
   (interactive)
   (goto-char (overlay-start ckc-overlay-head))
-  (insert (ckc-cana-to-roman))
+  (insert (ckc-cana-to-ascii))
   (delete-region (point) (overlay-end ckc-overlay-head))
   (unwind-protect
       (run-hook-with-args 'ckc-after-update-conversion-functions
@@ -1243,7 +1243,7 @@ and change the current conversion to the last one in the group."
           "\\)+$")
   "再変換の対象となる部分文字列にマッチする正規表現.")
 
-(defun cana-backward-scan-roman (str)
+(defun cana-backward-scan-ascii (str)
   "STR を末尾から先頭方向にスキャンして, 再変換の対象となる部分文字列を返す
 (`cana-backward-scan-pattern' を参照).
 変換すべき文字列がないときは, nil を返す."
@@ -1257,14 +1257,14 @@ and change the current conversion to the last one in the group."
   "バッファ内の文字列に対して `ckc-region' を使って再変換を行う.
 リージョンがアクティブのときは, そのリージョンを変換する.
 そうでなければ, カーソルの左の対象文字列を変換する
-(`cana-backward-scan-roman' を参照)."
+(`cana-backward-scan-ascii' を参照)."
   (interactive)
   (if (use-region-p)
       (ckc-region (region-beginning) (region-end))
     (let* ((str (buffer-substring (point-at-bol) (point)))
-           (roman (cana-backward-scan-roman str)))
-      (when roman
-        (ckc-region (- (point) (length roman)) (point))))))
+           (ascii (cana-backward-scan-ascii str)))
+      (when ascii
+        (ckc-region (- (point) (length ascii)) (point))))))
 
 ;;; cana preview
 
