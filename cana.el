@@ -1282,7 +1282,7 @@ and change the current conversion to the last one in the group."
 
 ;;
 
-(defvar cana-preview-enabled-p t "非 nil なら, かなプレビューを有効化する.")
+(defvar cana-preview-enabled t "非 nil なら, かなプレビューを有効化する.")
 
 (defface cana-preview-face
   '((t (:inherit popup-tip-face
@@ -1299,7 +1299,7 @@ and change the current conversion to the last one in the group."
     (popup-delete cana-preview-popup)))
 
 (defun cana-preview-show (&rest _arguments)
-  "`cana-preview-enabled-p' が非 nil なら, かなプレビューを表示する."
+  "`cana-preview-enabled' が非 nil なら, かなプレビューを表示する."
   (when (equal current-input-method "cana")
     (let* ((beg (overlay-start quail-conv-overlay))
            (end (overlay-end quail-conv-overlay))
@@ -1310,7 +1310,7 @@ and change the current conversion to the last one in the group."
         (setq quail-current-str nil
               quail-current-key nil)
         (when (and (featurep 'popup)
-                   cana-preview-enabled-p)
+                   cana-preview-enabled)
           (cana-preview-hide)
           (setq cana-preview-popup (popup-tip (cana-to-kana str)
                                               :face 'cana-preview-face
@@ -1335,8 +1335,8 @@ and change the current conversion to the last one in the group."
 (defun cana-preview-toggle ()
   "かなプレビューをトグルする."
   (interactive)
-  (setq cana-preview-enabled-p (not cana-preview-enabled-p))
-  (message "Kana preview %s" (if cana-preview-enabled-p "on" "off"))
+  (setq cana-preview-enabled (not cana-preview-enabled))
+  (message "Kana preview %s" (if cana-preview-enabled "on" "off"))
   (cana-preview-show))
 
 ;;; cursor color

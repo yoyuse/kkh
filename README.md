@@ -112,7 +112,7 @@ cana.el は、入力中の文字列を英字で表示しますが、
 [popup.el](https://github.com/auto-complete/popup-el)
 がインストールされていれば、対応するかなをツールチップでプレビュー表示します。
 
-この挙動を抑制するには、 `(setq cana-preview-enabled-p nil)` とします。
+この挙動を抑制するには、 `(setq cana-preview-enabled nil)` とします。
 
 ## バグ
 
