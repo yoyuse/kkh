@@ -331,7 +331,7 @@
  "JIS kana input on US keyboard.
 "
  nil t t nil nil nil nil nil
- #'quail-cana-update-translation
+ nil                                 ; #'quail-cana-update-translation
  '(("\C-g" . quail-cana-cancel)
    ("\C-j" . quail-cana-convert)
    ("\C-k" . quail-cana-commit-katakana)
@@ -342,7 +342,8 @@
    ;; ([escape] . quail-cana-cancel)
    (" " . nil)
    ([?\S- ] . quail-cana-insert-space))
- t)
+ nil                                    ; t
+ )
 
 ;; 空白を除く ASCII 文字 [!-~] キーで, その文字自身を入力
 (let ((c 33))                           ; (c 32)
