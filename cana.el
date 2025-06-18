@@ -46,6 +46,9 @@
 ;;   ;; (setq ckc-show-conversion-list-count 2)
 ;;   ;; カーソル色を Teal 400 に
 ;;   ;; (setq cana-cursor-color "#26A69A")
+;;   ;; かなプレビューの文字色を Grey 800, 背景色を Teal 100 に
+;;   ;; (set-face-attribute 'cana-preview-face
+;;   ;;                     nil :foreground "#424242" :background "#B2DFDB")
 ;;   ;; C-変換 で再変換
 ;;   ;; (define-key global-map (kbd "C-<henkan>") 'cana-reconvert)
 ;;   ;; C-無変換 でかなプレビューをトグル
@@ -1282,12 +1285,9 @@ and change the current conversion to the last one in the group."
 (defvar cana-preview-enabled-p t "非 nil なら, かなプレビューを有効化する.")
 
 (defface cana-preview-face
-  '((t (:inherit popup-face
-                 :foreground "#424242"  ; Grey 800
-                 :background "#B2DFDB"  ; Teal 100
-                 :weight regular :slant normal
-                 :inverse-video nil
-                 :underline nil)))
+  '((t (:inherit popup-tip-face
+                 :weight normal :slant normal
+                 :underline nil :inverse-video nil)))
   "かなプレビューのポップアップのフェイス.")
 
 (defvar cana-preview-popup nil "ポップアップオブジェクト.")
