@@ -367,7 +367,7 @@
 (require 'url-http)
 (require 'json)
 
-(defvar ckc-partial-cancel t
+(defvar ckc-partial-cancel nil
   "非 nil なら, `ckc-cancel' のときに確定した文節を ASCII 文字列に戻さない.")
 
 (defvar ckc-select-to-commit t
