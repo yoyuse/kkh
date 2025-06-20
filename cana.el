@@ -46,9 +46,6 @@
 ;;   ;; (setq ckc-show-conversion-list-count 2)
 ;;   ;; カーソル色を Teal 400 に
 ;;   ;; (setq cana-cursor-color "#26A69A")
-;;   ;; かなプレビューの文字色を Grey 800, 背景色を Teal 100 に
-;;   ;; (set-face-attribute 'cana-preview-face
-;;   ;;                     nil :foreground "#424242" :background "#B2DFDB")
 ;;   ;; C-変換 で再変換
 ;;   ;; (define-key global-map (kbd "C-<henkan>") 'cana-reconvert)
 ;;   ;; C-無変換 でかなプレビューをトグル
@@ -1273,30 +1270,64 @@ and change the current conversion to the last one in the group."
 ;;; cana preview
 
 ;; 空白を除く ASCII 文字 [!-~] キーに, quail-self-insert-command を割り当てる
-(let ((c 33))
-  (while (< c 127)
-    ;; (quail-defrule (char-to-string c) (char-to-string c))
-    (define-key (quail-conversion-keymap)
-      (char-to-string c) 'quail-self-insert-command)
-    (setq c (1+ c))))
+;; (let ((c 33))
+;;   (while (< c 127)
+;;     ;; (quail-defrule (char-to-string c) (char-to-string c))
+;;     (define-key (quail-conversion-keymap)
+;;       (char-to-string c) 'quail-self-insert-command)
+;;     (setq c (1+ c))))
 
 ;;
 
 (defvar cana-preview-enabled t "非 nil なら, かなプレビューを有効化する.")
 
-(defface cana-preview-face
-  '((t (:inherit popup-tip-face
-                 :weight normal :slant normal
-                 :underline nil :inverse-video nil)))
-  "かなプレビューのポップアップのフェイス.")
+;; (defvar cana-preview-enabled nil
+;;   "`echo-area' なら, echo area にかなプレビューを表示する.
+;; `popup-tip' なら, popup tip でかなプレビューを表示する.
+;; nil なら, かなプレビューを無効化する.")
 
-(defvar cana-preview-popup nil "ポップアップオブジェクト.")
+;; (defface cana-preview-face
+;;   '((t (:inherit popup-tip-face
+;;                  :weight normal :slant normal
+;;                  :underline nil :inverse-video nil)))
+;;   "かなプレビューのポップアップのフェイス.")
 
-(defun cana-preview-hide ()
-  "かなプレビューを非表示にする."
-  (when (and (featurep 'popup)
-             (popup-live-p cana-preview-popup))
-    (popup-delete cana-preview-popup)))
+;; (defvar cana-preview-popup nil "ポップアップオブジェクト.")
+
+;; (defun cana-preview-hide ()
+;;   "かなプレビューを非表示にする."
+;;   ;;
+;;   ;; (when (and (featurep 'popup)
+;;   (when (and (eq cana-preview-enabled 'popup-tip)
+;;              (featurep 'popup)
+;;              ;; /
+;;              (popup-live-p cana-preview-popup))
+;;     (popup-delete cana-preview-popup)))
+
+;; (defun cana-preview-show (&rest _arguments)
+;;   "`cana-preview-enabled' が非 nil なら, かなプレビューを表示する."
+;;   (when (equal current-input-method "cana")
+;;     (let* ((beg (overlay-start quail-conv-overlay))
+;;            (end (overlay-end quail-conv-overlay))
+;;            (str (and beg end (buffer-substring beg end))))
+;;       (cana-preview-hide)
+;;       (when str
+;;         (setq quail-conversion-str str)
+;;         (setq quail-current-str nil
+;;               quail-current-key nil)
+;;         ;;
+;;         (when (eq cana-preview-enabled 'echo-area)
+;;           (let ((message-log-max nil))
+;;             (message "%s" (cana-to-kana str))))
+;;         ;; (when (and (featurep 'popup)
+;;         (when (and (eq cana-preview-enabled 'popup-tip)
+;;                    (featurep 'popup)
+;;                    ;; /
+;;                    cana-preview-enabled)
+;;           (cana-preview-hide)
+;;           (setq cana-preview-popup (popup-tip (cana-to-kana str)
+;;                                               :face 'cana-preview-face
+;;                                               :height 1 :nowait t)))))))
 
 (defun cana-preview-show (&rest _arguments)
   "`cana-preview-enabled' が非 nil なら, かなプレビューを表示する."
@@ -1304,31 +1335,29 @@ and change the current conversion to the last one in the group."
     (let* ((beg (overlay-start quail-conv-overlay))
            (end (overlay-end quail-conv-overlay))
            (str (and beg end (buffer-substring beg end))))
-      (cana-preview-hide)
       (when str
         (setq quail-conversion-str str)
         (setq quail-current-str nil
               quail-current-key nil)
-        (when (and (featurep 'popup)
-                   cana-preview-enabled)
-          (cana-preview-hide)
-          (setq cana-preview-popup (popup-tip (cana-to-kana str)
-                                              :face 'cana-preview-face
-                                              :height 1 :nowait t)))))))
+        (when cana-preview-enabled
+          (let ((message-log-max nil))
+            (message "%s" (cana-to-kana str))))))))
 
 ;;
 
 ;; かなプレビューを表示・非表示するアドバイスとフック
-(dolist (fun '(quail-conversion-backward-delete-char
-               quail-conversion-delete-char
-               quail-self-insert-command
-               quail-cana-convert))
-  (advice-add fun :after #'cana-preview-show))
+;; (dolist (fun '(quail-conversion-backward-delete-char
+;;                quail-conversion-delete-char
+;;                quail-self-insert-command
+;;                quail-cana-convert))
+;;   (advice-add fun :after #'cana-preview-show))
 
-(advice-add 'quail-cana-cancel :after #'cana-preview-hide)
-(advice-add 'quail-cana-convert :before #'cana-preview-hide)
+;; (advice-add 'quail-cana-cancel :after #'cana-preview-hide)
+;; (advice-add 'quail-cana-convert :before #'cana-preview-hide)
 
-(add-hook 'post-command-hook #'cana-preview-hide)
+;; (add-hook 'post-command-hook #'cana-preview-hide)
+
+(advice-add 'quail-show-guidance :after #'cana-preview-show)
 
 ;;
 
