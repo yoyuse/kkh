@@ -399,7 +399,20 @@
                     (cl-map 'vector (lambda (v) (aref v 1)) vector))
             nil)))
 
-;; (require 'ja-dic-utl)
+;;
+(defvar ckc-use-ja-dic nil
+  "非 nil のとき, `ckc-lookup-key-sub' の代わりに `skkdic-lookup-key' を使う.")
+
+(defun ckc-toggle-use-ja-dic ()
+  "`ckc-use-ja-dic' をトグルする."
+  (interactive)
+  (setq ckc-use-ja-dic (not ckc-use-ja-dic))
+  (message "%s" (if ckc-use-ja-dic "Using ja-dic" "Using Google API"))
+  (ckc-lookup-key ckc-length-head)
+  (ckc-update-conversion 'all))
+
+(require 'ja-dic-utl)
+;; /
 
 (defvar ckc-input-method-title "漢"
   "String denoting CKC input method.
@@ -498,6 +511,9 @@ This string is shown at mode line when users are in CKC mode.")
     (define-key map "\C-o" 'ckc-cana-hankaku)
     (define-key map "\C-u" 'ckc-cana-hiragana)
     (define-key map "\C-t" 'ckc-cana-zenkaku)
+    ;;
+    (define-key map "\C-s" 'ckc-toggle-use-ja-dic)
+    ;; /
     (define-key map "\C-h" 'ckc-help)
     ;;
     map)
@@ -610,10 +626,14 @@ area while indicating the current selection by `<N>'."
 
 (defun ckc-lookup-key-sub (key len &optional postfix prefer-noun)
   "かなの配列 KEY の長さ LEN 分の変換候補のリストを返す.
-POSTFIX と PREFER-NOUN は無視される."
+`ckc-use-ja-dic' が非 nil なら, `skkdic-lookup-key' を呼び出す.
+そうでなければ `ckc-google-transliterate' を呼び出す (この場合は,
+POSTFIX と PREFER-NOUN は無視される)."
   (let* ((string (concat key))
          (string (substring string 0 len)))
-    (car (ckc-google-transliterate (concat string ",")))))
+    (if ckc-use-ja-dic
+        (skkdic-lookup-key key len postfix prefer-noun)
+      (car (ckc-google-transliterate (concat string ","))))))
 
 ;; Lookup Japanese dictionary to set list of conversions in
 ;; ckc-current-conversions for key sequence ckc-current-key of length
@@ -686,6 +706,7 @@ and the return value is the length of the conversion."
   (setq ckc-length-converted 0)
   ;;
   (setq ckc-length-commit 0)
+  (setq ckc-use-ja-dic nil)
   ;; /
 
   (unwind-protect
@@ -947,8 +968,10 @@ and the return value is the length of the conversion."
                 (concat ckc-original-kana (char-to-string (aref newkey i))))
           (setq i (1+ i)))
         ;;
-        (cl-incf ckc-length-commit
-                 (- (length ckc-current-key) (length newkey)))
+        (setq ckc-length-commit
+              (+ ckc-length-commit
+                 (- (length ckc-current-key) (length newkey))))
+        (setq ckc-use-ja-dic nil)
         ;; /
         (setq ckc-current-key newkey)
         (setq ckc-length-converted 0)
