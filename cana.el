@@ -1390,21 +1390,37 @@ and change the current conversion to the last one in the group."
 ;;                                               :face 'cana-preview-face
 ;;                                               :height 1 :nowait t)))))))
 
-(defun cana-preview-show (&rest _arguments)
-  "`cana-preview-enabled' が非 nil なら, かなプレビューを表示する."
+;; (defun cana-preview-show (&rest _arguments)
+;;   "`cana-preview-enabled' が非 nil なら, かなプレビューを表示する."
+;;   (when (and (equal current-input-method "cana")
+;;              (overlayp quail-conv-overlay))
+;;     (let* ((beg (overlay-start quail-conv-overlay))
+;;            (end (overlay-end quail-conv-overlay))
+;;            (str (and beg end (buffer-substring beg end))))
+;;       (message nil)
+;;       (when str
+;;         (setq quail-conversion-str str)
+;;         (setq quail-current-str nil
+;;               quail-current-key nil)
+;;         (when cana-preview-enabled
+;;           (let ((message-log-max nil))
+;;             (message "%s" (cana-to-kana str))))))))
+
+;; mini-buffer 内でもかなプレビューできるこちらのほうがいいかも
+(defun cana-preview-set-guidance-str ()
+  "`cana-preview-enabled' が非 nil なら, `quail-guidance-str' を設定する."
   (when (and (equal current-input-method "cana")
              (overlayp quail-conv-overlay))
     (let* ((beg (overlay-start quail-conv-overlay))
            (end (overlay-end quail-conv-overlay))
-           (str (and beg end (buffer-substring beg end))))
-      (message nil)
+           (str (and beg end (buffer-substring-no-properties beg end))))
       (when str
-        (setq quail-conversion-str str)
-        (setq quail-current-str nil
-              quail-current-key nil)
-        (when cana-preview-enabled
-          (let ((message-log-max nil))
-            (message "%s" (cana-to-kana str))))))))
+        (setq quail-conversion-str str
+              ;; quail-current-key nil
+              ;; quail-current-str nil
+              quail-guidance-str (if cana-preview-enabled
+                                     (cana-to-kana str)
+                                   ""))))))
 
 ;;
 
@@ -1420,7 +1436,9 @@ and change the current conversion to the last one in the group."
 
 ;; (add-hook 'post-command-hook #'cana-preview-hide)
 
-(advice-add 'quail-show-guidance :after #'cana-preview-show)
+;; (advice-add 'quail-show-guidance :after #'cana-preview-show)
+
+(advice-add 'quail-show-guidance :before #'cana-preview-set-guidance-str)
 
 ;;
 
@@ -1429,7 +1447,8 @@ and change the current conversion to the last one in the group."
   (interactive)
   (setq cana-preview-enabled (not cana-preview-enabled))
   (message "Kana preview %s" (if cana-preview-enabled "on" "off"))
-  (cana-preview-show))
+  ;; (cana-preview-show))
+  (cana-preview-set-guidance-str))
 
 ;;; cursor color
 
