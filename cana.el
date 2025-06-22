@@ -1392,10 +1392,12 @@ and change the current conversion to the last one in the group."
 
 (defun cana-preview-show (&rest _arguments)
   "`cana-preview-enabled' が非 nil なら, かなプレビューを表示する."
-  (when (equal current-input-method "cana")
+  (when (and (equal current-input-method "cana")
+             (overlayp quail-conv-overlay))
     (let* ((beg (overlay-start quail-conv-overlay))
            (end (overlay-end quail-conv-overlay))
            (str (and beg end (buffer-substring beg end))))
+      (message nil)
       (when str
         (setq quail-conversion-str str)
         (setq quail-current-str nil
