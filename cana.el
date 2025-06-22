@@ -499,8 +499,10 @@ This string is shown at mode line when users are in CKC mode.")
     (define-key map "\C-v" 'ckc-show-conversion-list-or-next-group)
     ;; (define-key map "\M-v" 'ckc-show-conversion-list-or-prev-group)
     ;; (define-key map "\C-b" 'ckc-show-conversion-list-or-prev-group)
-    (define-key map [?\C-,] 'ckc-shorter)
-    (define-key map [?\C-.] 'ckc-longer)
+    ;; (define-key map [?\C-,] 'ckc-shorter)
+    ;; (define-key map [?\C-.] 'ckc-longer)
+    (define-key map [?\C-,] 'ckc-shorter-or-longest)
+    (define-key map [?\C-.] 'ckc-longer-or-shortest)
     (define-key map [?\C-<] 'ckc-shorter-conversion)
     (define-key map [?\C->] 'ckc-longer-phrase)
     ;; (define-key map [escape] 'ckc-cancel)
@@ -922,6 +924,41 @@ and the return value is the length of the conversion."
   ;; This time, try also entries with postfixes.
   (ckc-lookup-key ckc-length-head 'postfix)
   (ckc-update-conversion 'all))
+
+;;
+
+(defun ckc-shorter-or-longest ()
+  "Make the Kana string to be converted shorter.
+If already shortest, make it longest."
+  (interactive)
+  (if (<= ckc-length-head 1)
+      ;; すでに最短なら, 最長にする
+      (ckc-lookup-key (setq ckc-length-head (length ckc-current-key)))
+    ;; 縮める
+    (if (> ckc-length-converted (setq ckc-length-head (1- ckc-length-head)))
+        (let ((len ckc-length-head))
+          (setq ckc-length-converted 0)
+          (while (not (ckc-lookup-key len))
+            (setq len (1- len))))))
+  (ckc-update-conversion 'all))
+
+(defun ckc-longer-or-shortest ()
+  "Make the Kana string to be converted longer.
+If already longest, make it shortest."
+  (interactive)
+  (if (>= ckc-length-head (length ckc-current-key))
+      ;; すでに最長なら, 最短にする
+      (if (> ckc-length-converted (setq ckc-length-head 1))
+          (let ((len ckc-length-head))
+            (setq ckc-length-converted 0)
+            (while (not (ckc-lookup-key len))
+              (setq len (1- len)))))
+    ;; 伸ばす
+    ;; This time, try also entries with postfixes.
+    (ckc-lookup-key (setq ckc-length-head (1+ ckc-length-head)) 'postfix))
+  (ckc-update-conversion 'all))
+
+;; /
 
 (defun ckc-shorter-conversion ()
   "Make the Kana string to be converted shorter."
