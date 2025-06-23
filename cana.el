@@ -51,6 +51,8 @@
 ;;   ;; C-無変換 でかなプレビューをトグル
 ;;   ;; (let ((map (quail-conversion-keymap)))
 ;;   ;;   (define-key map (kbd "C-<muhenkan>") 'cana-preview-toggle))
+;;   ;; S-無変換 で再入力
+;;   ;; (define-key global-map (kbd "S-<muhenkan>") 'cana-reinput)
 ;;   )
 
 ;;; Code:
@@ -1449,6 +1451,34 @@ and change the current conversion to the last one in the group."
   (message "Kana preview %s" (if cana-preview-enabled "on" "off"))
   ;; (cana-preview-show))
   (cana-preview-set-guidance-str))
+
+;;; reinput
+
+(defvar cana-reinput-original-ascii nil "入力の ASCII 文字列.")
+
+(defun cana-reinput-set-original-ascii ()
+  "`cana-reinput-original-ascii' を設定する."
+  (when (and (equal current-input-method "cana")
+             (overlayp quail-conv-overlay))
+    (let* ((beg (overlay-start quail-conv-overlay))
+           (end (overlay-end quail-conv-overlay))
+           (str (and beg end (buffer-substring-no-properties beg end))))
+      (setq cana-reinput-original-ascii str))))
+
+(defun cana-reinput ()
+  "`cana-reinput-original-ascii' を再入力する."
+  (interactive)
+  (when (and (equal current-input-method "cana")
+             cana-reinput-original-ascii)
+    (setq unread-input-method-events
+          ;; (string-to-list cana-reinput-original-ascii)
+          ;; XXX: S-SPC で入力した空白を処理したい
+          (mapcar (lambda (c) (if (eq c ?\ )
+                                  ?\S-\ ; XXX: ここ
+                                c))
+                  (string-to-list cana-reinput-original-ascii)))))
+
+(advice-add 'quail-show-guidance :before #'cana-reinput-set-original-ascii)
 
 ;;; cursor color
 
