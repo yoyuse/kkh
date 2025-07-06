@@ -330,7 +330,127 @@
       ;; translation mode.
       (setq quail-translating nil)))
 
-;; かな入力およびかな漢字変換による日本語入力メソッド
+;;; natural cursor
+
+(defvar cana-natural-cursor-enabled t
+  "非 nil なら, ナチュラルカーソルを有効化する.")
+
+(defun quail-cana-backward-char ()
+  (interactive)
+  (if cana-natural-cursor-enabled
+      (if (<= (point) (overlay-start quail-conv-overlay))
+          (let* ((start (overlay-start quail-conv-overlay))
+                 (end (overlay-end quail-conv-overlay))
+                 (len (- end start))
+                 (events (make-list (1+ len) last-command-event)))
+            (quail-no-conversion)
+            (setq unread-command-events (append unread-command-events events)))
+        (setq quail-translating nil)
+        (forward-char -1))
+    (quail-conversion-backward-char)))
+
+(defun quail-cana-forward-char ()
+  (interactive)
+  (if cana-natural-cursor-enabled
+      (if (>= (point) (overlay-end quail-conv-overlay))
+          (let ((events (list last-command-event)))
+            (quail-no-conversion)
+            (setq unread-command-events (append unread-command-events events)))
+        (setq quail-translating nil)
+        (forward-char 1))
+    (quail-conversion-forward-char)))
+
+(defun quail-cana-beginning-of-region ()
+  (interactive)
+  (if cana-natural-cursor-enabled
+      (if (<= (point) (overlay-start quail-conv-overlay))
+          (let ((events (list last-command-event)))
+            (quail-no-conversion)
+            (setq unread-command-events (append unread-command-events events)))
+        (setq quail-translating nil)
+        (goto-char (overlay-start quail-conv-overlay)))
+    (quail-conversion-beginning-of-region)))
+
+(defun quail-cana-end-of-region ()
+  (interactive)
+  (if cana-natural-cursor-enabled
+      (if (>= (point) (overlay-end quail-conv-overlay))
+          (let ((events (list last-command-event)))
+            (quail-no-conversion)
+            (setq unread-command-events (append unread-command-events events)))
+        (setq quail-translating nil)
+        (goto-char (overlay-end quail-conv-overlay)))
+    (quail-conversion-end-of-region)))
+
+(defun quail-cana-delete-char ()
+  (interactive)
+  (setq quail-translating nil)
+  (if cana-natural-cursor-enabled
+      (if (>= (point) (overlay-end quail-conv-overlay))
+          (let ((events (list last-command-event)))
+            (quail-no-conversion)
+            (setq unread-command-events (append unread-command-events events)))
+        (delete-char 1)
+        (let ((start (overlay-start quail-conv-overlay))
+              (end (overlay-end quail-conv-overlay)))
+          (setq quail-conversion-str (buffer-substring start end))
+          (if (= start end)
+              (setq quail-converting nil))))
+    (quail-conversion-delete-char)))
+
+(defun quail-cana-delete-tail ()
+  (interactive)
+  (if cana-natural-cursor-enabled
+      (if (>= (point) (overlay-end quail-conv-overlay))
+          (let ((events (list last-command-event)))
+            (quail-no-conversion)
+            (setq unread-command-events (append unread-command-events events)))
+        (delete-region (point) (overlay-end quail-conv-overlay))
+        (let ((start (overlay-start quail-conv-overlay))
+              (end (overlay-end quail-conv-overlay)))
+          (setq quail-conversion-str (buffer-substring start end))
+          (if (= start end)
+              (setq quail-converting nil))))
+    (quail-conversion-delete-tail)))
+
+(defun quail-cana-backward-delete-char ()
+  (interactive)
+  (if cana-natural-cursor-enabled
+      (if (> (length quail-current-key) 0)
+          (quail-delete-last-char)
+        (if (<= (point) (overlay-start quail-conv-overlay))
+            (let ((events (list last-command-event)))
+              (quail-no-conversion)
+              (setq unread-command-events (append unread-command-events events)))
+          (delete-char -1)
+          (let ((start (overlay-start quail-conv-overlay))
+                (end (overlay-end quail-conv-overlay)))
+            (setq quail-conversion-str (buffer-substring start end))
+            (if (= start end)
+                (setq quail-converting nil)))))
+    (quail-conversion-backward-delete-char)))
+
+(defun quail-cana-space ()
+  (interactive)
+  (if cana-natural-cursor-enabled
+      (let ((start (overlay-start quail-conv-overlay))
+            (end (overlay-end quail-conv-overlay))
+            (pos (point)))
+        (if (and start
+                 (> pos start)
+                 (< pos end))
+            (quail-cana-insert-space)
+          (let ((events (list last-command-event)))
+            (quail-no-conversion)
+            (when (<= pos start)
+              (setq events (append (make-list (- end start) ?\C-b) events))) ; XXX
+            (setq unread-command-events (append unread-command-events events)))))
+    (quail-no-conversion)
+    (setq unread-command-events (append unread-command-events
+                                        (list last-command-event)))))
+
+;;; かな入力およびかな漢字変換による日本語入力メソッド
+
 (quail-define-package
  "cana" "Japanese" "か"
  nil
@@ -338,15 +458,23 @@
 "
  nil t t nil nil nil nil nil
  nil                                 ; #'quail-cana-update-translation
- '(("\C-g" . quail-cana-cancel)
+ '(("\C-a" . quail-cana-beginning-of-region)
+   ("\C-b" . quail-cana-backward-char)
+   ("\C-d" . quail-cana-delete-char)
+   ("\C-e" . quail-cana-end-of-region)
+   ("\C-f" . quail-cana-forward-char)
+   ("\C-g" . quail-cana-cancel)
    ("\C-j" . quail-cana-convert)
    ("\C-k" . quail-cana-commit-katakana)
    ("\C-l" . quail-no-conversion)
    ("\C-o" . quail-cana-commit-hankaku)
    ("\C-u" . quail-cana-commit-hiragana)
    ("\C-t" . quail-cana-commit-zenkaku)
-   ;; ([escape] . quail-cana-cancel)
-   (" " . nil)
+   ("\177" . quail-cana-backward-delete-char)
+   ([delete] . quail-cana-backward-delete-char)
+   ([backspace] . quail-cana-backward-delete-char)
+   ;; (" " . nil)
+   (" " . quail-cana-space)
    ([?\S- ] . quail-cana-insert-space))
  nil                                    ; t
  )
