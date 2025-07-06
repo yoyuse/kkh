@@ -46,6 +46,7 @@
 ;;   ;; (setq ckc-show-conversion-list-count 2)
 ;;   ;; カーソル色を Teal 400 に
 ;;   ;; (setq cana-cursor-color "#26A69A")
+;;   ;; (add-hook 'post-command-hook 'cana-cursor-color-set-color)
 ;;   ;; C-変換 で再変換
 ;;   ;; (define-key global-map (kbd "C-<henkan>") 'cana-reconvert)
 ;;   ;; C-無変換 でかなプレビューをトグル
@@ -1517,7 +1518,7 @@ nil なら, カーソル色を変更しない.")
          (set-cursor-color cana-cursor-color))
         (t (set-cursor-color cana-cursor-color-default))))
 
-(add-hook 'post-command-hook 'cana-cursor-color-set-color)
+;; (add-hook 'post-command-hook 'cana-cursor-color-set-color)
 
 ;; provide
 
