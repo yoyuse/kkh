@@ -55,6 +55,7 @@
 ;;   ;; (define-key global-map (kbd "S-<muhenkan>") 'cana-reinput)
 ;;   ;; M-無変換 で全バッファでインプットメソッドを OFF
 ;;   ;; (define-key global-map (kbd "M-<muhenkan>") 'cana-deactivate-input-method-all-buffers)
+;;   ;; (define-key minibuffer-mode-map (kbd "M-<muhenkan>") 'cana-deactivate-input-method-all-buffers)
 ;;   )
 
 ;;; Code:
@@ -1484,19 +1485,20 @@ and change the current conversion to the last one in the group."
 
 ;;; deactivate input method all buffers
 
-(defun cana-deactivate-input-method-all-buffers ()
+(defun cana-deactivate-input-method-all-buffers (verbose)
   "すべてのバッファでインプットメソッドを OFF にする."
-  (interactive)
+  (interactive "p")
   (let ((count 0))
     (save-window-excursion
       (dolist (buffer (buffer-list))
         (with-current-buffer buffer
           (when current-input-method
             (deactivate-input-method)
-            (message "Deactivated input method in buffer %s"
-                     (buffer-name buffer))
+            (when verbose (message "Deactivated input method in buffer %s"
+                                   (buffer-name buffer)))
             (setq count (1+ count)))))
-      (message "(Deactivated input method in %d buffer(s))" count))))
+      (when verbose
+        (message "(Deactivated input method in %d buffer(s))" count)))))
 
 ;;; cursor color
 
