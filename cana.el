@@ -1455,12 +1455,13 @@ and change the current conversion to the last one in the group."
 そうでなければ, カーソルの左の対象文字列を変換する
 (`cana-backward-scan-ascii' を参照)."
   (interactive)
-  (if (use-region-p)
-      (ckc-region (region-beginning) (region-end))
-    (let* ((str (buffer-substring (point-at-bol) (point)))
-           (ascii (cana-backward-scan-ascii str)))
-      (when ascii
-        (ckc-region (- (point) (length ascii)) (point))))))
+  (when (equal current-input-method "cana")
+    (if (use-region-p)
+        (ckc-region (region-beginning) (region-end))
+      (let* ((str (buffer-substring (point-at-bol) (point)))
+             (ascii (cana-backward-scan-ascii str)))
+        (when ascii
+          (ckc-region (- (point) (length ascii)) (point)))))))
 
 ;;; cana preview
 
@@ -1579,10 +1580,11 @@ and change the current conversion to the last one in the group."
 (defun cana-preview-toggle ()
   "かなプレビューをトグルする."
   (interactive)
-  (setq cana-preview-enabled (not cana-preview-enabled))
-  (message "Kana preview %s" (if cana-preview-enabled "on" "off"))
-  ;; (cana-preview-show))
-  (cana-preview-set-guidance-str))
+  (when (equal current-input-method "cana")
+    (setq cana-preview-enabled (not cana-preview-enabled))
+    (message "Kana preview %s" (if cana-preview-enabled "on" "off"))
+    ;; (cana-preview-show))
+    (cana-preview-set-guidance-str)))
 
 ;;; reinput
 
