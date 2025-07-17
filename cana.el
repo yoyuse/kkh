@@ -342,6 +342,9 @@ LAYOUT は (NAME DOCSTRING &rest RULES) の形式のリスト."
 (defvar cana-rules-pattern nil
   "かなに変換する ASCII 文字列の正規表現.")
 
+(defvar cana-default-layout-name "uskana"
+  "デフォルトのかな入力配列名 (文字列).")
+
 (defvar cana-current-layout nil
   "現在選択されているかな入力配列.")
 
@@ -367,7 +370,7 @@ LAYOUT は (NAME DOCSTRING &rest RULES) の形式のリスト."
         (setq cana-previous-layout cana-current-layout
               cana-current-layout layout))))
 
-(cana-set-layout (car cana-layouts))
+;; (cana-set-layout (car cana-layouts))
 
 (defun cana-select-layout ()
   "配列を選択する."
@@ -1869,7 +1872,14 @@ and change the current conversion to the last one in the group."
       (when verbose
         (message "(Deactivated input method in %d buffer(s))" count)))))
 
-;;; input method title
+;;; set layout & input method title
+
+(defun cana-set-layout-ad (&rest _args)
+  (when (and (equal current-input-method "cana")
+             (null cana-current-layout))
+    (let ((layout (assoc cana-default-layout-name cana-layouts)))
+      (when layout
+        (cana-set-layout layout)))))
 
 (defun cana-input-method-title-ad (&rest _args)
   "`current-input-method-title' にかな入力配列名を付加する."
@@ -1878,6 +1888,14 @@ and change the current conversion to the last one in the group."
            (title (format "%s(%s)" (quail-title) name)))
       (setq current-input-method-title title))))
 
+;; > 同じdepthで2つのアドバイスが指定された場合には、
+;; > もっとも最近に追加されたアドバイスが最外になります。
+;;
+;; > 同様に:afterアドバイスにたいしては、最内とは元の関数の直後、
+;; > つまりこの元の関数とアドバイスの間に実行される他のアドバイスは存在せず、
+;; > 最外とは他のすべてのアドバイスが実行された直後にこのアドバイスが
+;; > 実行されることを意味する。
+(advice-add 'activate-input-method :after #'cana-set-layout-ad)
 (advice-add 'activate-input-method :after #'cana-input-method-title-ad)
 (advice-add 'cana-select-layout :after #'cana-input-method-title-ad)
 
