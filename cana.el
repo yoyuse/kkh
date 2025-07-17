@@ -1869,6 +1869,18 @@ and change the current conversion to the last one in the group."
       (when verbose
         (message "(Deactivated input method in %d buffer(s))" count)))))
 
+;;; input method title
+
+(defun cana-input-method-title-ad (&rest _args)
+  "`current-input-method-title' にかな入力配列名を付加する."
+  (when (equal current-input-method "cana")
+    (let* ((name (car cana-current-layout))
+           (title (format "%s(%s)" (quail-title) name)))
+      (setq current-input-method-title title))))
+
+(advice-add 'activate-input-method :after #'cana-input-method-title-ad)
+(advice-add 'cana-select-layout :after #'cana-input-method-title-ad)
+
 ;;; cursor color
 
 (defvar cana-cursor-color nil
