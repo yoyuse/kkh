@@ -70,8 +70,13 @@
 
 (defun cana-define-layout (layout)
   "かな入力配列 LAYOUT を定義する.
-LAYOUT は (NAME DOCSTRING &rest RULES) の形式のリスト."
-  (add-to-list 'cana-layouts layout t)) ; XXX: 同じ NAME の LAYOUT は上書きしたい
+LAYOUT は (NAME DOCSTRING &rest RULES) の形式のリスト.
+すでに NAME という名前のかな入力配列が定義されていれば, 上書きする."
+  (let* ((name (car layout))
+         (old-layout (assoc name cana-layouts)))
+    (if old-layout
+        (setcdr old-layout (cdr layout))
+      (add-to-list 'cana-layouts layout t))))
 
 ;;; uskana
 
