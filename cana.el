@@ -42,8 +42,6 @@
 
 ;; (when (require 'cana nil t)
 ;;   (setq default-input-method "cana")
-;;   ;; 次候補キー 2 回で候補リストを表示
-;;   ;; (setq ckc-show-conversion-list-count 2)
 ;;   ;; カーソル色を Teal 400 に
 ;;   ;; (setq cana-cursor-color "#26A69A")
 ;;   ;; (add-hook 'post-command-hook 'cana-cursor-color-set-color)
@@ -942,7 +940,7 @@ This string is shown at mode line when users are in CKC mode.")
 ;; `ckc-current-conversion'.
 (defvar ckc-current-conversions-width nil)
 
-(defcustom ckc-show-conversion-list-count 4
+(defcustom ckc-show-conversion-list-count 2 ; was: 4
   "Count of successive `ckc-next' or `ckc-prev' to show conversion list.
 When you type C-n or C-p successively this count while using the input
 method `cana', the conversion candidates are shown in the echo
