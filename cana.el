@@ -753,6 +753,9 @@ LAYOUT は (NAME DOCSTRING &rest RULES) の形式のリスト.
 (defvar ckc-select-to-commit t
   "非 nil なら, 候補リストから選択したあとに確定する.")
 
+(defvar ckc-url-show-status nil
+  "nil のとき, \"Contacting host ...\" の表示を抑制する.")
+
 (defun ckc-google-transliterate (string)
   "ひらがな文字列 STRING を Google Transliterate して結果をリストにして返す.
 
@@ -764,6 +767,7 @@ LAYOUT は (NAME DOCSTRING &rest RULES) の形式のリスト.
          (url (concat url encoded))
          (url-request-method "GET")
          (url-max-redirections 0)
+         (url-show-status (and ckc-url-show-status url-show-status))
          (buf (url-retrieve-synchronously url))
          (p (url-http-symbol-value-in-buffer 'url-http-end-of-headers buf))
          (json (unwind-protect
