@@ -835,6 +835,12 @@ This string is shown at mode line when users are in CKC mode.")
 (defvar ckc-show-conversion-list-index-chars
   "1234567890")
 
+;; 0 .. 9 の代わりに C-0 .. C-9 で候補を選択する
+(defvar ckc-conversion-list-index-keys
+  (apply #'vconcat
+         (mapcar (function (lambda (c) (kbd (format "C-%c" c))))
+                 (string-to-vector ckc-show-conversion-list-index-chars))))
+
 (defun ckc-help ()
   "Show key bindings available while converting by CKC."
   (interactive)
@@ -846,9 +852,13 @@ This string is shown at mode line when users are in CKC mode.")
         (len (length ckc-show-conversion-list-index-chars))
         (i 0))
     (while (< i len)
+      ;; (define-key map
+      ;;   (char-to-string (aref ckc-show-conversion-list-index-chars i))
+      ;;   'ckc-select-from-list)
       (define-key map
-        (char-to-string (aref ckc-show-conversion-list-index-chars i))
-        'ckc-select-from-list)
+                  (make-vector 1 (aref ckc-conversion-list-index-keys i))
+                  'ckc-select-from-list)
+      ;; /
       (setq i (1+ i)))
     ;; (define-key map " " 'ckc-next)
     ;; (define-key map "\r" 'ckc-terminate)
@@ -1245,7 +1255,10 @@ and the return value is the length of the conversion."
 (defun ckc-select-from-list ()
   "Select one candidate from the list currently shown in echo area."
   (interactive)
-  (let (idx)
+  (let (idx
+        ;;
+        (ckc-show-conversion-list-index-chars ckc-conversion-list-index-keys))
+    ;; /
     (if ckc-current-conversions-width
         (let ((len (length ckc-show-conversion-list-index-chars))
               (maxlen (- (aref (aref ckc-current-conversions-width 0) 1)
