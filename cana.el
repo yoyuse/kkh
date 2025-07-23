@@ -845,8 +845,13 @@ This string is shown at mode line when users are in CKC mode.")
 (defun ckc-help ()
   "Show key bindings available while converting by CKC."
   (interactive)
+  ;; (with-output-to-temp-buffer "*Help*"
+  ;;   (princ (substitute-command-keys "\\{ckc-keymap}")))
   (with-output-to-temp-buffer "*Help*"
-    (princ (substitute-command-keys "\\{ckc-keymap}"))))
+    (with-current-buffer standard-output
+      (quail-help-insert-keymap-description ckc-keymap)))
+  ;; /
+  )
 
 (defvar ckc-keymap
   (let ((map (make-sparse-keymap))
