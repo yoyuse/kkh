@@ -785,6 +785,9 @@ LAYOUT は (NAME DOCSTRING &rest RULES) の形式のリスト.
 (defvar ckc-use-ja-dic nil
   "非 nil のとき, `ckc-lookup-key-sub' の代わりに `skkdic-lookup-key' を使う.")
 
+(defvar ckc-use-ja-dic-temporally t
+  "非 nil のとき, 文節確定ごとに `ckc-use-ja-dic' を nil にリセットする.")
+
 (defun ckc-toggle-use-ja-dic ()
   "`ckc-use-ja-dic' をトグルする."
   (interactive)
@@ -1100,7 +1103,9 @@ and the return value is the length of the conversion."
   (setq ckc-length-converted 0)
   ;;
   (setq ckc-length-commit 0)
-  (setq ckc-use-ja-dic nil)
+  ;; (setq ckc-use-ja-dic nil)
+  (when ckc-use-ja-dic-temporally
+    (setq ckc-use-ja-dic nil))
   ;; /
 
   (unwind-protect
@@ -1403,7 +1408,9 @@ If already longest, make it shortest."
         (setq ckc-length-commit
               (+ ckc-length-commit
                  (- (length ckc-current-key) (length newkey))))
-        (setq ckc-use-ja-dic nil)
+        ;; (setq ckc-use-ja-dic nil)
+        (when ckc-use-ja-dic-temporally
+          (setq ckc-use-ja-dic nil))
         ;; /
         (setq ckc-current-key newkey)
         (setq ckc-length-converted 0)
