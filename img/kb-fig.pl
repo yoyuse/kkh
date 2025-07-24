@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-# usage: perl kb-fig.pl < kb-cana-hhkb.json > kb-cana-hhkb.svg
+# usage: perl kb-fig.pl < kb-uskana-hhkb.json > kb-uskana-hhkb.svg
 
 # 2025-06-09
 
