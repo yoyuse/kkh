@@ -1712,13 +1712,13 @@ and change the current conversion to the last one in the group."
 
 ;;; reconvert
 
-(defvar kkh-backward-scan-pattern
+(defun kkh-backward-scan-pattern ()
+  "再変換の対象となる部分文字列にマッチする正規表現を返す."
   (concat "\\("
           (mapconcat (lambda (s) (regexp-quote s))
                      (mapcar (lambda (rule) (car rule)) kkh-rules)
                      "\\|")
-          "\\)+$")
-  "再変換の対象となる部分文字列にマッチする正規表現.")
+          "\\)+$"))
 
 (defun kkh-backward-scan-ascii (str)
   "STR を末尾から先頭方向にスキャンして, 再変換の対象となる部分文字列を返す
@@ -1726,7 +1726,7 @@ and change the current conversion to the last one in the group."
 変換すべき文字列がないときは, nil を返す."
   (let ((case-fold-search nil))
     (save-match-data
-      (if (string-match kkh-backward-scan-pattern str)
+      (if (string-match (kkh-backward-scan-pattern) str)
           (match-string-no-properties 0 str)
         nil))))
 
