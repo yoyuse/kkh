@@ -1,0 +1,100 @@
+;;; kkh-moon-cx.el --- Tsuki layout Cx for kkh.el    -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2025  YUSE Yosihiro
+
+;; Author: YUSE Yosihiro <yoyuse@gmail.com>
+;; Keywords: input method, Japanese
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; ** 月配列 Cx
+;; - ベースは 月配列 2-263
+;; - 同手シフトも使う
+;; - 30 キーの範囲に収める
+;; - 濁音・半濁音 (ぜびぶべぼぴぷぺぽ) を 2 打鍵化
+
+;;; Code:
+
+(require 'kkh)
+
+(kkh-define-layout
+ '("moon-cx"
+   "月Cx"
+   "中指前置シフト新JIS 月配列 私家版 C2
+
+# 単打
+そこしてょ  つんいのり
+はか☆とた  くう★゛き
+すけになさ  っる、。゜
+
+# 逆手シフト              # 同手シフト
+ぁひほふめ  ぬえみやぇ    ばびぼぶべ  ○○○ぢち
+ぃをらあよ  まおもわゆ    ゎ○○ゐゑ  ヵヶ○○れ
+ぅへせゅゃ  むろねーぉ    ぱぴぽぷぺ  『』「」・
+
+# 特殊
+ぜ(cl)
+
+# ゜シフト                # ゜゜シフト
+“《》”〒  ￥§【】¶    ‘〈〉’〇  ≡♪♂♀∞
+★▲■●×  ←↓↑→⇒    ☆△□○〆  ≒±≪≫⇔
+〓▼◆※々  ℃〜—…      　▽◇◎〃  ≠÷≦≧
+"
+
+   (( "q" "そ") ( "w" "こ") ( "e" "し") ( "r" "て") ( "t" "ょ")
+    ( "y" "つ") ( "u" "ん") ( "i" "い") ( "o" "の") ( "p" "り")
+    ( "a" "は") ( "s" "か")             ( "f" "と") ( "g" "た")
+    ( "h" "く") ( "j" "う")             ( "l" "゛") ( ";" "き")
+    ( "z" "す") ( "x" "け") ( "c" "に") ( "v" "な") ( "b" "さ")
+    ( "n" "っ") ( "m" "る") ( "," "、") ( "." "。") ( "/" "゜")
+
+    ("dq" "ば") ("dw" "び") ("de" "ぼ") ("dr" "ぶ") ("dt" "べ")
+    ("dy" "ぬ") ("du" "え") ("di" "み") ("do" "や") ("dp" "ぇ")
+    ("da" "ゎ")                         ("df" "ゐ") ("dg" "ゑ")
+    ("dh" "ま") ("dj" "お") ("dk" "も") ("dl" "わ") ("d;" "ゆ")
+    ("dz" "ぱ") ("dx" "ぴ") ("dc" "ぽ") ("dv" "ぷ") ("db" "ぺ")
+    ("dn" "む") ("dm" "ろ") ("d," "ね") ("d." "ー") ("d/" "ぉ")
+
+    ("kq" "ぁ") ("kw" "ひ") ("ke" "ほ") ("kr" "ふ") ("kt" "め")
+    ("ko" "ぢ") ("kp" "ち")
+    ("ka" "ぃ") ("ks" "を") ("kd" "ら") ("kf" "あ") ("kg" "よ")
+    ("kh" "ヵ") ("kj" "ヶ")                         ("k;" "れ")
+    ("kz" "ぅ") ("kx" "へ") ("kc" "せ") ("kv" "ゅ") ("kb" "ゃ")
+    ("kn" "『") ("km" "』") ("k," "「") ("k." "」") ("k/" "・")
+
+    ("ql" "ぞ") ("wl" "ご") ("el" "じ") ("rl" "で")
+    ("yl" "づ")
+                ("sl" "が")             ("fl" "ど") ("gl" "だ")
+    ("hl" "ぐ") ("jl" "ヴ")                         (";l" "ぎ")
+    ("zl" "ず") ("xl" "げ") ("cl" "ぜ")             ("bl" "ざ")
+
+    ("/q" "“") ("/w" "《") ("/e" "》") ("/r" "”") ("/t" "〒")
+    ("/y" "￥") ("/u" "§") ("/i" "【") ("/o" "】") ("/p" "¶")
+    ("/a" "★") ("/s" "▲") ("/d" "■") ("/f" "●") ("/g" "×")
+    ("/h" "←") ("/j" "↓") ("/k" "↑") ("/l" "→") ("/;" "⇒")
+    ("/z" "〓") ("/x" "▼") ("/c" "◆") ("/v" "※") ("/b" "々")
+    ("/n" "℃") ("/m" "〜") ("/," "—") ("/." "…") ;; ("//" "//")
+
+    ("//q" "‘") ("//w" "〈") ("//e" "〉") ("//r" "’") ("//t" "〇")
+    ("//y" "≡") ("//u" "♪") ("//i" "♂") ("//o" "♀") ("//p" "∞")
+    ("//a" "☆") ("//s" "△") ("//d" "□") ("//f" "○") ("//g" "〆")
+    ("//h" "≒") ("//j" "±") ("//k" "≪") ("//l" "≫") ("//;" "⇔")
+    ("//z" "　") ("//x" "▽") ("//c" "◇") ("//v" "◎") ("//b" "〃")
+    ("//n" "≠") ("//m" "÷") ("//," "≦") ("//." "≧") ;; ("///" "///")
+    )))
+
+(provide 'kkh-moon-cx)
+;;; kkh-moon-cx.el ends here
