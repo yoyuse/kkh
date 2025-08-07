@@ -75,7 +75,23 @@
 LAYOUT は (NAME TITLE DOCSTRING RULES) の形式のリスト.
 すでに NAME という名前のかな入力配列が定義されていれば, 上書きする."
   (let* ((name (car layout))
-         (old-layout (assoc name kkh-layouts)))
+         ;; (old-layout (assoc name kkh-layouts)))
+         (old-layout (assoc name kkh-layouts))
+         (rules (nth 3 layout))
+         kkh-rules kkh-rules-pattern)
+    (setq kkh-rules (copy-alist rules))
+    ;; ASCII 文字列の長さで降順ソートしておく
+    (setq kkh-rules
+          (sort kkh-rules
+                (lambda (a b) (< (length (car b)) (length (car a))))))
+    (setq kkh-rules-pattern
+          (concat "\\(.*?\\)\\("
+                  (mapconcat (lambda (s) (regexp-quote s))
+                             (mapcar (lambda (rule) (car rule)) kkh-rules)
+                             "\\|")
+                  "\\)\\(.*\\)"))
+    (nconc layout (list kkh-rules) (list kkh-rules-pattern))
+    ;; /
     (if old-layout
         (setcdr old-layout (cdr layout))
       (add-to-list 'kkh-layouts layout t))))
@@ -282,36 +298,59 @@ LAYOUT は (NAME TITLE DOCSTRING RULES) の形式のリスト.
 
 ;;; kkh
 
-(defvar kkh-rules nil
-  "ASCII 文字列とかなの対応の連想配列.")
+;;
+;; (defvar-local kkh-rules nil
+;;   "ASCII 文字列とかなの対応の連想配列.")
 
-(defvar kkh-rules-pattern nil
-  "かなに変換する ASCII 文字列の正規表現.")
+;; (defvar-local kkh-rules-pattern nil
+;;   "かなに変換する ASCII 文字列の正規表現.")
+
+(defsubst kkh-rules ()
+  "ASCII 文字列とかなの対応の連想配列."
+  (nth 4 kkh-current-layout))
+
+(defsubst kkh-rules-pattern ()
+  "かなに変換する ASCII 文字列の正規表現."
+  (nth 5 kkh-current-layout))
+;; /
 
 (defvar kkh-default-layout-name "uskana"
   "デフォルトのかな入力配列名 (文字列).")
 
-(defvar kkh-current-layout nil
+(defvar-local kkh-current-layout nil
   "現在選択されているかな入力配列.")
+;;
+(put 'kkh-current-layout 'permanent-local t)
+;; /
 
-(defvar kkh-previous-layout nil
+(defvar-local kkh-previous-layout nil
   "直前に選択されていたかな入力配列.")
 
 (defun kkh-set-layout (layout)
   "かな入力配列 LAYOUT に設定する."
   (let ((name (car layout))
-        (rules (nth 3 layout)))
-    (setq kkh-rules (copy-alist rules))
-    ;; ASCII 文字列の長さで降順ソートしておく
-    (setq kkh-rules
-          (sort kkh-rules
-                (lambda (a b) (< (length (car b)) (length (car a))))))
-    (setq kkh-rules-pattern
-          (concat "\\(.*?\\)\\("
-                  (mapconcat (lambda (s) (regexp-quote s))
-                             (mapcar (lambda (rule) (car rule)) kkh-rules)
-                             "\\|")
-                  "\\)\\(.*\\)"))
+        ;; (rules (nth 3 layout))
+        ;;
+        ;; kkh-rules kkh-rules-pattern
+        ;; /
+        )
+    ;; (setq kkh-rules (copy-alist rules))
+    ;; ;; ASCII 文字列の長さで降順ソートしておく
+    ;; (setq kkh-rules
+    ;;       (sort kkh-rules
+    ;;             (lambda (a b) (< (length (car b)) (length (car a))))))
+    ;; (setq kkh-rules-pattern
+    ;;       (concat "\\(.*?\\)\\("
+    ;;               (mapconcat (lambda (s) (regexp-quote s))
+    ;;                          (mapcar (lambda (rule) (car rule)) kkh-rules)
+    ;;                          "\\|")
+    ;;               "\\)\\(.*\\)"))
+    ;; ;;
+    ;; (while (< (length layout) 6)
+    ;;   (nconc layout (list nil)))
+    ;; (setf (nth 4 layout) kkh-rules)
+    ;; (setf (nth 5 layout) kkh-rules-pattern)
+    ;; /
     (if (not (equal name (car kkh-current-layout)))
         (setq kkh-previous-layout kkh-current-layout
               kkh-current-layout layout))))
@@ -339,9 +378,13 @@ LAYOUT は (NAME TITLE DOCSTRING RULES) の形式のリスト.
   "ASCII 文字列 STR をかなに変換した新しい文字列を返す."
   (let ((case-fold-search nil))
     (save-match-data
-      (while (string-match kkh-rules-pattern str)
+      ;; (while (string-match kkh-rules-pattern str)
+      (while (string-match (kkh-rules-pattern) str)
+        ;; /
         (setq str (concat (match-string 1 str)
-                          (cadr (assoc (match-string 2 str) kkh-rules))
+                          ;; (cadr (assoc (match-string 2 str) kkh-rules))
+                          (cadr (assoc (match-string 2 str) (kkh-rules)))
+                          ;; /
                           (match-string 3 str))))
       str)))
 
@@ -1582,7 +1625,10 @@ and change the current conversion to the last one in the group."
   (mapconcat
    #'(lambda (c)
        (japanese-zenkaku
-        (or (car (cl-rassoc (list (char-to-string c)) kkh-rules :test #'equal))
+        ;; (or (car (cl-rassoc (list (char-to-string c)) kkh-rules :test #'equal))
+        (or (car (cl-rassoc (list (char-to-string c)) (kkh-rules)
+                            :test #'equal))
+            ;; /
             (char-to-string c))))
    (string-to-list
     (substring (mapconcat #'(lambda (c) (char-to-string c)) kkh-current-key "")
@@ -1625,7 +1671,9 @@ and change the current conversion to the last one in the group."
     (mapconcat
      #'(lambda (c)
          (or (car (cl-rassoc (list (char-to-string c))
-                             kkh-rules :test #'equal))
+                             ;; kkh-rules :test #'equal))
+                             (kkh-rules) :test #'equal))
+             ;; /
              (char-to-string c)))
      (string-to-list
       (substring (mapconcat #'(lambda (c) (char-to-string c))
@@ -1652,7 +1700,9 @@ and change the current conversion to the last one in the group."
   "再変換の対象となる部分文字列にマッチする正規表現を返す."
   (concat "\\("
           (mapconcat (lambda (s) (regexp-quote s))
-                     (mapcar (lambda (rule) (car rule)) kkh-rules)
+                     ;; (mapcar (lambda (rule) (car rule)) kkh-rules)
+                     (mapcar (lambda (rule) (car rule)) (kkh-rules))
+                     ;; /
                      "\\|")
           "\\)+$"))
 
@@ -1850,10 +1900,26 @@ and change the current conversion to the last one in the group."
 
 ;;; set layout & input method title
 
+;; isearch や query-replace などで kkh-current-layout を引き継ぎたい
+(defvar kkh-last-layout nil
+  "最後に選択されたかな入力配列")
+
+(defun kkh-set-last-layout-hook ()
+  (setq kkh-last-layout kkh-current-layout))
+
+(add-hook 'post-command-hook #'kkh-set-last-layout-hook)
+;; (remove-hook 'post-command-hook #'kkh-set-last-layout-hook)
+;; /
+
 (defun kkh-set-layout-ad (&rest _args)
-  (when (and (equal current-input-method "japanese-kkh")
-             (null kkh-current-layout))
-    (let ((layout (assoc kkh-default-layout-name kkh-layouts)))
+  ;; (when (and (equal current-input-method "japanese-kkh")
+  ;;            (null kkh-current-layout))
+  (when (equal current-input-method "japanese-kkh")
+    ;;/
+    ;; (let ((layout (assoc kkh-default-layout-name kkh-layouts)))
+    (let ((layout (or kkh-last-layout
+                      (assoc kkh-default-layout-name kkh-layouts))))
+      ;; /
       (when layout
         (kkh-set-layout layout)))))
 
