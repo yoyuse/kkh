@@ -46,9 +46,6 @@
 ;;   ;; (setq kkh-default-layout-name "uskana")
 ;;   ;; ローマ字入力
 ;;   ;; (setq kkh-default-layout-name "roman")
-;;   ;; カーソル色を Teal 400 に
-;;   ;; (setq kkh-cursor-color "#26A69A")
-;;   ;; (add-hook 'post-command-hook 'kkh-cursor-color-set-color)
 ;;   ;; C-変換 で再変換
 ;;   ;; (define-key global-map (kbd "C-<henkan>") 'kkh-reconvert)
 ;;   ;; C-無変換 でかなプレビューをトグル
@@ -1940,25 +1937,6 @@ and change the current conversion to the last one in the group."
 (advice-add 'activate-input-method :after #'kkh-set-layout-ad)
 (advice-add 'activate-input-method :after #'kkh-input-method-title-ad)
 (advice-add 'kkh-select-layout :after #'kkh-input-method-title-ad)
-
-;;; cursor color
-
-(defvar kkh-cursor-color nil
-  "日本語モードのときのカーソル色を表す文字列.
-nil なら, カーソル色を変更しない.")
-
-(defvar kkh-cursor-color-default
-  (cdr (assq 'cursor-color (frame-parameters (selected-frame))))
-  "日本語モードでないときのカーソル色を表す文字列.")
-
-(defun kkh-cursor-color-set-color ()
-  "日本語モードのときにカーソル色を `kkh-cursor-color' に変更する."
-  (cond ((null kkh-cursor-color) nil)
-        ((and kkh-cursor-color (equal current-input-method "japanese-kkh"))
-         (set-cursor-color kkh-cursor-color))
-        (t (set-cursor-color kkh-cursor-color-default))))
-
-;; (add-hook 'post-command-hook 'kkh-cursor-color-set-color)
 
 ;; provide
 

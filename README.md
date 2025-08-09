@@ -61,13 +61,6 @@ kkh.el を `load-path` の通ったところに置いて init.el に次のよう
   ;; (setq kkh-default-layout-name "uskana")
   ;; ローマ字入力
   ;; (setq kkh-default-layout-name "roman")
-  ;; カーソル色を Teal 400 に
-  ;; (setq kkh-cursor-color "#26A69A")
-  ;; (add-hook 'post-command-hook 'kkh-cursor-color-set-color)
-  ;; C-変換 で再変換
-  ;; (define-key global-map (kbd "C-<henkan>") 'kkh-reconvert)
-  ;; C-無変換 でかなプレビューをトグル
-  ;; (define-key (quail-conversion-keymap) (kbd "C-<muhenkan>") 'kkh-preview-toggle)
   ;; S-無変換 で再入力
   ;; (define-key global-map (kbd "S-<muhenkan>") 'kkh-reinput)
   ;; M-無変換 で全バッファでインプットメソッドを OFF
