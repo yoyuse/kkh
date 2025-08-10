@@ -46,6 +46,9 @@
 ;;   ;; (setq kkh-default-layout-name "uskana")
 ;;   ;; ローマ字入力
 ;;   ;; (setq kkh-default-layout-name "roman")
+;;   ;; 常に ja-dic を利用した変換を行う
+;;   ;; (setq kkh-use-ja-dic-temporally nil
+;;   ;;       kkh-use-ja-dic t)
 ;;   ;; C-変換 で再変換
 ;;   ;; (define-key global-map (kbd "C-<henkan>") 'kkh-reconvert)
 ;;   ;; C-無変換 でかなプレビューをトグル
@@ -768,7 +771,7 @@ LAYOUT は (NAME TITLE DOCSTRING RULES) の形式のリスト.
 (defvar kkh-use-ja-dic nil
   "非 nil のとき, `kkh-lookup-key-sub' の代わりに `skkdic-lookup-key' を使う.")
 
-(defvar kkh-use-ja-dic-temporally t
+(defvar kkh-use-ja-dic-temporally nil   ; t
   "非 nil のとき, 文節確定ごとに `kkh-use-ja-dic' を nil にリセットする.")
 
 (defun kkh-toggle-use-ja-dic ()
@@ -786,33 +789,33 @@ LAYOUT は (NAME TITLE DOCSTRING RULES) の形式のリスト.
   "String denoting KKH input method.
 This string is shown at mode line when users are in KKH mode.")
 
-;; (defvar kkh-init-file-name (locate-user-emacs-file "kkcrc" ".kkcrc")
-;;   "Name of a file which contains user's initial setup code for KKH.")
+(defvar kkh-init-file-name (locate-user-emacs-file "kkhrc" ".kkhrc")
+  "Name of a file which contains user's initial setup code for KKH.")
 
 ;; A flag to control a file specified by `kkh-init-file-name'.
 ;; The value nil means the file is not yet consulted.
 ;; The value t means the file has already been consulted but there's
 ;; no need of updating it yet.
 ;; Any other value means that we must update the file before exiting Emacs.
-;; (defvar kkh-init-file-flag nil)
+(defvar kkh-init-file-flag nil)
 
 ;; Cash data for `kkh-lookup-key'.  This may be initialized by loading
 ;; a file specified by `kkh-init-file-name'.  If any elements are
 ;; modified, the data is written out to the file when exiting Emacs.
-;; (defvar kkh-lookup-cache nil)
+(defvar kkh-lookup-cache nil)
 
 ;; Tag symbol of `kkh-lookup-cache'.
-;; (defconst kkh-lookup-cache-tag 'kkh-lookup-cache-2)
+(defconst kkh-lookup-cache-tag 'kkh-lookup-cache-2)
 
-;; (defun kkh-save-init-file ()
-;;   "Save initial setup code for KKH to a file specified by `kkh-init-file-name'."
-;;   (if (and kkh-init-file-flag
-;;            (not (eq kkh-init-file-flag t)))
-;;       (let ((coding-system-for-write 'iso-2022-7bit)
-;;             (print-length nil))
-;;         (write-region (format "(setq kkh-lookup-cache '%S)\n" kkh-lookup-cache)
-;;                       nil
-;;                       kkh-init-file-name))))
+(defun kkh-save-init-file ()
+  "Save initial setup code for KKH to a file specified by `kkh-init-file-name'."
+  (if (and kkh-init-file-flag
+           (not (eq kkh-init-file-flag t)))
+      (let ((coding-system-for-write 'iso-2022-7bit)
+            (print-length nil))
+        (write-region (format "(setq kkh-lookup-cache '%S)\n" kkh-lookup-cache)
+                      nil
+                      kkh-init-file-name))))
 
 ;; Sequence of characters to be used for indexes for shown list.  The
 ;; Nth character is for the Nth conversion in the list currently shown.
@@ -1027,7 +1030,26 @@ POSTFIX と PREFER-NOUN は無視される)."
 ;; kkh-current-conversions and return nil.
 ;; Postfixes are handled only if POSTFIX is non-nil.
 (defun kkh-lookup-key (len &optional postfix prefer-noun)
-  (let ((entry nil))
+  ;;
+  ;; At first, prepare cache data if any.
+  (unless kkh-init-file-flag
+    (setq kkh-init-file-flag t
+          kkh-lookup-cache nil)
+    (add-hook 'kill-emacs-hook 'kkh-save-init-file)
+    (if (file-readable-p kkh-init-file-name)
+        (condition-case nil
+            (load-file kkh-init-file-name)
+          (kkh-error "Invalid data in %s" kkh-init-file-name))))
+  (or (and (nested-alist-p kkh-lookup-cache)
+           (eq (car kkh-lookup-cache) kkh-lookup-cache-tag))
+      (setq kkh-lookup-cache (list kkh-lookup-cache-tag)
+            kkh-init-file-flag 'kkh-lookup-cache))
+  ;; /
+  ;; (let ((entry nil))
+  (let ((entry (and kkh-use-ja-dic
+                    (lookup-nested-alist kkh-current-key
+                                         kkh-lookup-cache len 0 t))))
+    ;; /
     (if (consp (car entry))
         (setq kkh-length-converted len
               kkh-current-conversions-width nil
@@ -1038,6 +1060,15 @@ POSTFIX と PREFER-NOUN は無視される)."
             (setq kkh-length-converted len
                   kkh-current-conversions-width nil
                   kkh-current-conversions (cons 1 entry))
+            ;;
+            ;; (if postfix
+            (if (and kkh-use-ja-dic postfix)
+                ;; Store this conversions in the cache.
+                (progn
+                  (set-nested-alist kkh-current-key kkh-current-conversions
+                                    kkh-lookup-cache kkh-length-converted)
+                  (setq kkh-init-file-flag 'kkh-lookup-cache)))
+            ;; /
             t)
         (if (= len 1)
             (setq kkh-length-converted 1
@@ -1208,6 +1239,14 @@ and the return value is the length of the conversion."
     (if (>= idx (length kkh-current-conversions))
         (setq idx 0))
     (setcar kkh-current-conversions idx)
+    ;;
+    ;; (if (> idx 1)
+    (if (and kkh-use-ja-dic (> idx 1))
+        (progn
+          (set-nested-alist kkh-current-key kkh-current-conversions
+                            kkh-lookup-cache kkh-length-converted)
+          (setq kkh-init-file-flag 'kkh-lookup-cache)))
+    ;; /
     (if (or kkh-current-conversions-width
             (>= kkh-next-count kkh-show-conversion-list-count))
         (kkh-show-conversion-list-update))
@@ -1237,6 +1276,14 @@ and the return value is the length of the conversion."
     (if (< idx 0)
         (setq idx (1- (length kkh-current-conversions))))
     (setcar kkh-current-conversions idx)
+    ;;
+    ;; (if (> idx 1)
+    (if (and kkh-use-ja-dic (> idx 1))
+        (progn
+          (set-nested-alist kkh-current-key kkh-current-conversions
+                            kkh-lookup-cache kkh-length-converted)
+          (setq kkh-init-file-flag 'kkh-lookup-cache)))
+    ;; /
     (if (or kkh-current-conversions-width
             (>= kkh-prev-count kkh-show-conversion-list-count))
         (kkh-show-conversion-list-update))

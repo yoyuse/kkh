@@ -80,7 +80,10 @@ POSTFIX と PREFER-NOUN は無視される."
   "`kkh-mozc-enabled' をトグルする."
   (interactive)
   (setq kkh-mozc-enabled (not kkh-mozc-enabled))
-  (message "%s" (if kkh-mozc-enabled "Using Mozc" "Using Google API"))
+  ;; (message "%s" (if kkh-mozc-enabled "Using Mozc" "Using Google API"))
+  (message "%s" (if kkh-mozc-enabled
+                    "Using Mozc"
+                  (if kkh-use-ja-dic "Using ja-dic" "Using Google API")))
   (kkh-lookup-key kkh-length-head)
   (kkh-update-conversion 'all))
 
