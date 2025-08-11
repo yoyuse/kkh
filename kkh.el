@@ -374,19 +374,54 @@ LAYOUT は (NAME TITLE DOCSTRING RULES) の形式のリスト.
            (layout (assoc name kkh-layouts)))
       (kkh-set-layout layout))))
 
+(defun kkh-to-alist (str)
+  "ASCII 文字列 STR から ((KANA . ASCII) ...) の連想配列を作る."
+  (let ((case-fold-search nil)
+        kana ascii head alist)
+    (save-match-data
+      (while (string-match (kkh-rules-pattern) str)
+        (setq head (match-string 1 str)
+              ascii (match-string 2 str)
+              str (match-string 3 str)
+              kana (cadr (assoc ascii (kkh-rules))))
+        ;; XXX: for roman
+        (when (string-match "^っ\\(.\\)$" kana)
+          (let ((ch (match-string 1 kana)))
+            (when (string= ascii (concat ch ch))
+              (setq ascii ch
+                    str (concat ch str)
+                    kana "っ"))))
+        ;; /XXX
+        (when (not (string= head ""))
+          (setq alist (append alist (mapcar (lambda (c)
+                                              (let ((ch (char-to-string c)))
+                                                (cons ch ch)))
+                                            (string-to-list head)))))
+        (setq alist (append alist (list (cons kana ascii)))))
+      (when (not (string= str ""))
+        (setq alist (append alist (mapcar (lambda (c)
+                                            (let ((ch (char-to-string c)))
+                                              (cons ch ch)))
+                                          (string-to-list str)))))
+      alist)))
+
+;; (defun kkh-to-kana (str)
+;;   "ASCII 文字列 STR をかなに変換した新しい文字列を返す."
+;;   (let ((case-fold-search nil))
+;;     (save-match-data
+;;       ;; (while (string-match kkh-rules-pattern str)
+;;       (while (string-match (kkh-rules-pattern) str)
+;;         ;; /
+;;         (setq str (concat (match-string 1 str)
+;;                           ;; (cadr (assoc (match-string 2 str) kkh-rules))
+;;                           (cadr (assoc (match-string 2 str) (kkh-rules)))
+;;                           ;; /
+;;                           (match-string 3 str))))
+;;       str)))
+
 (defun kkh-to-kana (str)
   "ASCII 文字列 STR をかなに変換した新しい文字列を返す."
-  (let ((case-fold-search nil))
-    (save-match-data
-      ;; (while (string-match kkh-rules-pattern str)
-      (while (string-match (kkh-rules-pattern) str)
-        ;; /
-        (setq str (concat (match-string 1 str)
-                          ;; (cadr (assoc (match-string 2 str) kkh-rules))
-                          (cadr (assoc (match-string 2 str) (kkh-rules)))
-                          ;; /
-                          (match-string 3 str))))
-      str)))
+  (mapconcat #'car (kkh-to-alist str) ""))
 
 (defvar kkh-special-rules
   '(("ゎ" "ﾜﾟ") ("ゐ" "ｲﾟ") ("ゑ" "ｴﾟ") ("ヵ" "ｶﾟ") ("ヶ" "ｹﾟ"))
@@ -913,6 +948,8 @@ This string is shown at mode line when users are in KKH mode.")
 ;;
 (defvar kkh-original-ascii nil
   "変換対象のもとの ASCII 文字列.")
+
+(defvar kkh-original-alist nil)
 ;; /
 
 ;; The current Kana string to be converted.
@@ -1100,7 +1137,9 @@ positions FROM and TO (integers or markers) specifying the target region.
 When it returns, the point is at the tail of the selected conversion,
 and the return value is the length of the conversion."
   (interactive "r")
-  (setq kkh-original-ascii (buffer-substring from to))
+  ;; (setq kkh-original-ascii (buffer-substring from to))
+  (setq kkh-original-ascii (buffer-substring-no-properties from to))
+  (setq kkh-original-alist (kkh-to-alist kkh-original-ascii))
   (save-excursion
     (goto-char from)
     (kkh-translit-hiragana-region from to)
@@ -1180,6 +1219,22 @@ and the return value is the length of the conversion."
         (- (overlay-start kkh-overlay-head) from))
     (delete-overlay kkh-overlay-head)
     (delete-overlay kkh-overlay-tail)))
+
+;;
+(defun kkh-current-alist ()
+  (let ((len 0)
+        (original-alist kkh-original-alist)
+        (current-alist nil))
+    (while (and original-alist (< len kkh-length-commit))
+      (setq len (+ len (length (caar original-alist)))
+            original-alist (cdr original-alist)))
+    (setq len 0)
+    (while (and original-alist (< len kkh-length-head))
+      (setq len (+ len (length (caar original-alist)))
+            current-alist (append current-alist (list (car original-alist)))
+            original-alist (cdr original-alist)))
+    current-alist))
+;; /
 
 (defun kkh-terminate ()
   "Exit from KKH mode by fixing the current conversion."
@@ -1663,21 +1718,21 @@ and change the current conversion to the last one in the group."
                0 kkh-length-head))
    ""))
 
-(defun kkh-conv-to-zenkaku ()
-  "全角英字に変換する."
-  (interactive)
-  (mapconcat
-   #'(lambda (c)
-       (japanese-zenkaku
-        ;; (or (car (cl-rassoc (list (char-to-string c)) kkh-rules :test #'equal))
-        (or (car (cl-rassoc (list (char-to-string c)) (kkh-rules)
-                            :test #'equal))
-            ;; /
-            (char-to-string c))))
-   (string-to-list
-    (substring (mapconcat #'(lambda (c) (char-to-string c)) kkh-current-key "")
-               0 kkh-length-head))
-   ""))
+;; (defun kkh-conv-to-zenkaku ()
+;;   "全角英字に変換する."
+;;   (interactive)
+;;   (mapconcat
+;;    #'(lambda (c)
+;;        (japanese-zenkaku
+;;         ;; (or (car (cl-rassoc (list (char-to-string c)) kkh-rules :test #'equal))
+;;         (or (car (cl-rassoc (list (char-to-string c)) (kkh-rules)
+;;                             :test #'equal))
+;;             ;; /
+;;             (char-to-string c))))
+;;    (string-to-list
+;;     (substring (mapconcat #'(lambda (c) (char-to-string c)) kkh-current-key "")
+;;                0 kkh-length-head))
+;;    ""))
 
 (defun kkh-conv-hankaku ()
   "半角カナに確定する."
@@ -1691,6 +1746,12 @@ and change the current conversion to the last one in the group."
                           (overlay-end kkh-overlay-head))
     (goto-char (overlay-end kkh-overlay-tail))
     (kkh-next-phrase)))
+
+(defun kkh-conv-to-zenkaku ()
+  "全角英字に変換する."
+  (interactive)
+  (mapconcat #'(lambda (elm) (japanese-zenkaku (cdr elm)))
+             (kkh-current-alist) ""))
 
 (defun kkh-conv-zenkaku ()
   "全角英字に確定する."
@@ -1707,23 +1768,28 @@ and change the current conversion to the last one in the group."
 
 ;; ascii
 
-(defun kkh-conv-to-ascii (&optional current-key length-head)
+;; (defun kkh-conv-to-ascii (&optional current-key length-head)
+;;   "ASCII 文字列に変換する."
+;;   (interactive)
+;;   (let* ((kkh-current-key (if current-key current-key kkh-current-key))
+;;          (kkh-length-head (if length-head length-head kkh-length-head)))
+;;     (mapconcat
+;;      #'(lambda (c)
+;;          (or (car (cl-rassoc (list (char-to-string c))
+;;                              ;; kkh-rules :test #'equal))
+;;                              (kkh-rules) :test #'equal))
+;;              ;; /
+;;              (char-to-string c)))
+;;      (string-to-list
+;;       (substring (mapconcat #'(lambda (c) (char-to-string c))
+;;                             kkh-current-key "")
+;;                  0 kkh-length-head))
+;;      "")))
+
+(defun kkh-conv-to-ascii ()
   "ASCII 文字列に変換する."
   (interactive)
-  (let* ((kkh-current-key (if current-key current-key kkh-current-key))
-         (kkh-length-head (if length-head length-head kkh-length-head)))
-    (mapconcat
-     #'(lambda (c)
-         (or (car (cl-rassoc (list (char-to-string c))
-                             ;; kkh-rules :test #'equal))
-                             (kkh-rules) :test #'equal))
-             ;; /
-             (char-to-string c)))
-     (string-to-list
-      (substring (mapconcat #'(lambda (c) (char-to-string c))
-                            kkh-current-key "")
-                 0 kkh-length-head))
-     "")))
+  (mapconcat #'cdr (kkh-current-alist) ""))
 
 (defun kkh-conv-ascii ()
   "ASCII 文字列に確定する."
