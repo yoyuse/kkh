@@ -949,7 +949,8 @@ This string is shown at mode line when users are in KKH mode.")
 (defvar kkh-original-ascii nil
   "変換対象のもとの ASCII 文字列.")
 
-(defvar kkh-original-alist nil)
+(defvar kkh-original-alist nil
+  "`kkh-original-kana' と `kkh-original-ascii' の対応表.")
 ;; /
 
 ;; The current Kana string to be converted.
@@ -1221,18 +1222,52 @@ and the return value is the length of the conversion."
     (delete-overlay kkh-overlay-tail)))
 
 ;;
+;; (defun kkh-current-alist ()
+;;   (let ((len 0)
+;;         (original-alist kkh-original-alist)
+;;         (current-alist nil))
+;;     (while (and original-alist (< len kkh-length-commit))
+;;       (setq len (+ len (length (caar original-alist)))
+;;             original-alist (cdr original-alist)))
+;;     (setq len 0)
+;;     (while (and original-alist (< len kkh-length-head))
+;;       (setq len (+ len (length (caar original-alist)))
+;;             current-alist (append current-alist (list (car original-alist)))
+;;             original-alist (cdr original-alist)))
+;;     current-alist))
+
 (defun kkh-current-alist ()
+  "`kkh-length-head' 部分に対応する KANA と ASCII の対応表を返す."
   (let ((len 0)
         (original-alist kkh-original-alist)
-        (current-alist nil))
-    (while (and original-alist (< len kkh-length-commit))
-      (setq len (+ len (length (caar original-alist)))
-            original-alist (cdr original-alist)))
+        (current-alist nil)
+        newlen cons)
+    (setq newlen (+ len (length (caar original-alist))))
+    (while (and original-alist (<= newlen kkh-length-commit))
+      (setq len newlen
+            original-alist (cdr original-alist))
+      (setq newlen (+ len (length (caar original-alist)))))
+    (when (< len kkh-length-commit)
+      (setq newlen (min (- kkh-length-commit len)
+                        (length (caar original-alist))
+                        (length (cdar original-alist))))
+      (setq cons (cons (substring (caar original-alist) newlen)
+                       (substring (cdar original-alist) newlen)))
+      (setq original-alist (cons cons (cdr original-alist))))
     (setq len 0)
-    (while (and original-alist (< len kkh-length-head))
-      (setq len (+ len (length (caar original-alist)))
+    (setq newlen (+ len (length (caar original-alist))))
+    (while (and original-alist (<= newlen kkh-length-head))
+      (setq len newlen
             current-alist (append current-alist (list (car original-alist)))
-            original-alist (cdr original-alist)))
+            original-alist (cdr original-alist))
+      (setq newlen (+ len (length (caar original-alist)))))
+    (when (< len kkh-length-head)
+      (setq newlen (min (- kkh-length-head len)
+                        (length (caar original-alist))
+                        (length (cdar original-alist))))
+      (setq cons (cons (substring (caar original-alist) 0 newlen)
+                       (substring (cdar original-alist) 0 newlen)))
+      (setq current-alist (append current-alist (list cons))))
     current-alist))
 ;; /
 
