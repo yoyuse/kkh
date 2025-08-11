@@ -1003,7 +1003,10 @@ area while indicating the current selection by `<N>'."
 (defvar kkh-length-converted nil)
 ;;
 (defvar kkh-length-commit nil
-  "確定した文字列の長さ.")
+  "確定した文字列の長さ (かな).")
+
+(defvar kkh-length-commit-kanji nil
+  "確定した文字列の長さ (漢字).")
 ;; /
 
 ;; Cursor type (`box' or `bar') of the current frame.
@@ -1163,6 +1166,7 @@ and the return value is the length of the conversion."
   (setq kkh-length-converted 0)
   ;;
   (setq kkh-length-commit 0)
+  (setq kkh-length-commit-kanji 0)
   ;; (setq kkh-use-ja-dic nil)
   (when kkh-use-ja-dic-temporally
     (setq kkh-use-ja-dic nil))
@@ -1287,8 +1291,13 @@ and the return value is the length of the conversion."
   ;; (insert kkh-original-kana)
   ;; XXX
   (if kkh-partial-cancel
-      (insert (kkh-conv-to-ascii))
-    (delete-region (- (point) kkh-length-commit) (point))
+      (let ((str (kkh-conv-to-ascii)))
+        (insert str)
+        (when (zerop kkh-length-commit)
+          (insert (substring kkh-original-ascii (length str))))
+        ;; quail-conv-overlay をうまく設定したい
+        )
+    (delete-region (- (point) kkh-length-commit-kanji) (point))
     (insert kkh-original-ascii))
   ;; /
   (setq kkh-converting nil))
@@ -1534,6 +1543,9 @@ If already longest, make it shortest."
         (setq kkh-length-commit
               (+ kkh-length-commit
                  (- (length kkh-current-key) (length newkey))))
+        (setq kkh-length-commit-kanji
+              (+ kkh-length-commit-kanji
+                 (- (point) (overlay-start kkh-overlay-head))))
         ;; (setq kkh-use-ja-dic nil)
         (when kkh-use-ja-dic-temporally
           (setq kkh-use-ja-dic nil))
