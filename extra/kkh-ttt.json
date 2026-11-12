@@ -1,0 +1,90 @@
+{
+    "description": "親指漢直 (f14/f15) [Emacs]",
+    "manipulators": [
+        {
+            "conditions": [
+                {
+                    "bundle_identifiers": [
+                        "^org\\.gnu\\.Emacs$"
+                    ],
+                    "type": "frontmost_application_if"
+                },
+                {
+                    "name": "spc-tap",
+                    "type": "variable_if",
+                    "value": 1
+                }
+            ],
+            "from": {
+                "key_code": "spacebar"
+            },
+            "to": [
+                {
+                    "set_variable": {
+                        "name": "spc-tap",
+                        "value": 0
+                    }
+                }
+            ],
+            "to_if_held_down": [
+                {
+                    "key_code": "spacebar"
+                }
+            ],
+            "type": "basic"
+        },
+        {
+            "conditions": [
+                {
+                    "bundle_identifiers": [
+                        "^org\\.gnu\\.Emacs$"
+                    ],
+                    "type": "frontmost_application_if"
+                }
+            ],
+            "from": {
+                "key_code": "spacebar"
+            },
+            "to": [
+                {
+                    "key_code": "f14"
+                },
+                {
+                    "set_variable": {
+                        "name": "spc-tap",
+                        "value": 1
+                    }
+                }
+            ],
+            "to_after_key_up": [
+                {
+                    "key_code": "f15"
+                }
+            ],
+            "to_delayed_action": {
+                "to_if_canceled": [
+                    {
+                        "set_variable": {
+                            "name": "spc-tap",
+                            "value": 0
+                        }
+                    }
+                ],
+                "to_if_invoked": [
+                    {
+                        "set_variable": {
+                            "name": "spc-tap",
+                            "value": 0
+                        }
+                    }
+                ]
+            },
+            "to_if_alone": [
+                {
+                    "key_code": "spacebar"
+                }
+            ],
+            "type": "basic"
+        }
+    ]
+}
