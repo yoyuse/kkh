@@ -205,5 +205,52 @@ SPC キーによるシフトで MSB を付与する."
 
 (advice-add 'quail-self-insert-command :around #'kkh-ttt-space-quail-self-insert-command-ad)
 
+;;; kkh-ttt-zenkaku-hankaku - ASCII 文字を入力するための全角/半角変変換
+
+;; TT-code で入力できる半角英数記号文字は,
+;;   ! ? % ( ) 1 2 3 4 5 6 7 8 9 0
+;; の 15 字あるが, このうち ! を除く 14 字は, USかな打鍵と解釈されて
+;;   ・ ぇ ょ を ぬ ふ あ う え お や ゆ よ わ
+;; に化けてしまう.
+;; そこで, これらの文字は TT-code 変換したときに全角に退避しておいて,
+;; USかな 変換したあとで半角に復元するようにする.
+
+(defvar kkh-ttt-zenkaku-hankaku t
+  "非 nil のとき, 親指漢直で ASCII 文字を入力するために全角/半角変換を行う.")
+
+(defvar kkh-ttt-zenkaku-hankaku-alist
+  '((?1 . ?１) (?2 . ?２) (?3 . ?３) (?4 . ?４) (?5 . ?５)
+    (?6 . ?６) (?7 . ?７) (?8 . ?８) (?9 . ?９) (?0 . ?０)
+    (?! . ?！) (?% . ?％) (?\( . ?\（) (?\) . ?\）) (?? . ?？))
+  "全角/半角変換を行うための対応表の alist.")
+
+(defun kkh-ttt-zenkaku-ad (orig-fun &rest args)
+  "全角変換する advice."
+  (let ((dst (apply orig-fun args)))
+    (if (and kkh-ttt-enabled kkh-ttt-zenkaku-hankaku)
+        (save-match-data
+          (mapconcat
+           (lambda (c)
+             (char-to-string
+              (or (cdr-safe (assq c kkh-ttt-zenkaku-hankaku-alist)) c)))
+           (string-to-list dst)))
+      dst)))
+
+(advice-add 'kkh-ttt-raw-code-to-kanji :around #'kkh-ttt-zenkaku-ad)
+
+(defun kkh-ttt-hankaku-ad (orig-fun &rest args)
+  "半角変換する advice."
+  (let ((dst (apply orig-fun args)))
+    (if (and kkh-ttt-enabled kkh-ttt-zenkaku-hankaku)
+        (save-match-data
+          (mapconcat
+           (lambda (c)
+             (char-to-string
+              (or (car-safe (rassq c kkh-ttt-zenkaku-hankaku-alist)) c)))
+           (string-to-list dst)))
+      dst)))
+
+(advice-add 'kkh-to-kana :around #'kkh-ttt-hankaku-ad)
+
 (provide 'kkh-ttt)
 ;;; kkh-ttt.el ends here
