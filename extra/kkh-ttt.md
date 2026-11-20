@@ -76,103 +76,43 @@ kkh.el の日本語入力モードを ON にした状態で、
 
 ### `SPC` シフトの設定例 (Karabiner-Elements)
 
-以下は、
+Karabiner-Elements 用の設定例として [kkh-ttt-bar-prefix.json](kkh-ttt-bar-prefix.json) を用意しました。
+これは、
 
-> - (Emacs 使用時) `SPC` を押したときに `F14` を、離したときに `F15` を送る
+> - (Emacs 使用時) `SPC` でシフトしたときに `|` (VERTICAL LINE) を前置する
 
 という設定の JSON の例です。
 
-``` json
-{
-    "description": "親指漢直 (f14/f15) [Emacs]",
-    "manipulators": [
-        {
-            "conditions": [
-                {
-                    "bundle_identifiers": [
-                        "^org\\.gnu\\.Emacs$"
-                    ],
-                    "type": "frontmost_application_if"
-                },
-                {
-                    "name": "spc-tap",
-                    "type": "variable_if",
-                    "value": 1
-                }
-            ],
-            "from": {
-                "key_code": "spacebar"
-            },
-            "to": [
-                {
-                    "set_variable": {
-                        "name": "spc-tap",
-                        "value": 0
-                    }
-                }
-            ],
-            "to_if_held_down": [
-                {
-                    "key_code": "spacebar"
-                }
-            ],
-            "type": "basic"
-        },
-        {
-            "conditions": [
-                {
-                    "bundle_identifiers": [
-                        "^org\\.gnu\\.Emacs$"
-                    ],
-                    "type": "frontmost_application_if"
-                }
-            ],
-            "from": {
-                "key_code": "spacebar"
-            },
-            "to": [
-                {
-                    "key_code": "f14"
-                },
-                {
-                    "set_variable": {
-                        "name": "spc-tap",
-                        "value": 1
-                    }
-                }
-            ],
-            "to_after_key_up": [
-                {
-                    "key_code": "f15"
-                }
-            ],
-            "to_delayed_action": {
-                "to_if_canceled": [
-                    {
-                        "set_variable": {
-                            "name": "spc-tap",
-                            "value": 0
-                        }
-                    }
-                ],
-                "to_if_invoked": [
-                    {
-                        "set_variable": {
-                            "name": "spc-tap",
-                            "value": 0
-                        }
-                    }
-                ]
-            },
-            "to_if_alone": [
-                {
-                    "key_code": "spacebar"
-                }
-            ],
-            "type": "basic"
-        }
-    ]
-}
+Emacs が前面にあるときだけ、 `SPC` の挙動を次のように変更します。
+
+- `SPC` を押しながらタイプした文字キーに `|` prefix を付ける
+- `SPC`-`RET` で本来の `SPC` キーを送出する (キーリピート対応)
+
+さらに下記の式を init.el に追記すると、 kkh の ON/OFF に同期して `SPC` の挙動の変更を有効化/無効化します。
+
+``` emacs-lisp
+(defvar ke-karabiner-cli
+  (executable-find "/Library/Application Support/org.pqrs/Karabiner-Elements/bin/karabiner_cli")
+  "karabiner_cli コマンドのパス.")
+
+(defun ke-set-variable (var val)
+  "Karabiner-Elements の 変数 VAR の値を VAL に設定する."
+  (when ke-karabiner-cli
+    (call-process ke-karabiner-cli nil 0 nil
+                  "--set-variables" (format "{\"%s\":%s}" var val))))
+
+(defun ke-set-spc-enable (&rest args)
+  (if (member current-input-method '("japanese-kkh" "tu" "tu-katakana"))
+      (ke-set-variable "spc-off" 0)
+    (ke-set-variable "spc-off" 1)))
+
+(defun ke-set-spc-disable (&rest args)
+  (ke-set-variable "spc-off" 1))
+
+(add-hook 'input-method-activate-hook   #'ke-set-spc-enable)
+(add-hook 'input-method-deactivate-hook #'ke-set-spc-disable)
+(add-hook 'window-buffer-change-functions    #'ke-set-spc-enable)
+(add-hook 'window-selection-change-functions #'ke-set-spc-enable)
 ```
 
 ### 参考サイト
