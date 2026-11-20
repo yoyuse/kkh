@@ -77,33 +77,61 @@
 `kkh-ttt--with-reduction' が非 nil なら, 補助変換も行う."
   (save-match-data
     (let* ((src (replace-regexp-in-string "|\\(.\\)" "\\1" raw-code))
-           (dst (ttt--decode-string src)))
+           (ttt-keep-remainder nil)
+           (dst (ttt--decode-string src))
+           (remain (replace-regexp-in-string "\\(.\\)" "|\\1" ttt--remain))
+           (dst (concat dst remain)))
       (if kkh-ttt--with-reduction
           (ttt-reduce dst)
         (ttt--invalidate-all dst)))))
 
-(defun kkh-ttt-to-kanji (str)
-  "ASCII 文字列 STR 中の親指漢直コードを漢字に変換した新しい文字列を返す.
-`kkh-ttt--with-reduction' が非 nil なら, 補助変換も行う."
-  (let ((re "\\(.*?\\)\\(\\(?:|.\\)+\\)\\(.*\\)")
-        head raw-code tail kanji)
+(defun kkh-ttt-to-alist (str)
+  "ASCII 文字列 STR から ((KANA . ASCII) ...) の連想配列を作る."
+  (let ((case-fold-search nil)
+        kana ascii head alist
+        re (kkh-rules-pattern))
     (save-match-data
-      ;; (setq str (kkh-ttt-space-msb-to-bar str)) ; XXX
+      (setq re (replace-regexp-in-string
+                (regexp-quote "\\(.*?\\)\\(")
+                "\\&\\\\(\\\\(?:|.\\\\)+\\\\)\\\\|" ;XXX
+                (kkh-rules-pattern)))
       (while (string-match re str)
         (setq head (match-string 1 str)
-              raw-code (match-string 2 str)
-              kanji (kkh-ttt-raw-code-to-kanji raw-code)
-              tail (match-string 3 str)
-              str (concat head kanji tail)))
-      str)))
+              ascii (match-string 2 str)
+              code (match-string 3 str)
+              str (match-string 4 str)
+              kana (cadr (assoc ascii (kkh-rules)))
+              kanji (kkh-ttt-raw-code-to-kanji ascii)
+              kana (if (string-match-p "^|." ascii) kanji kana))
+        ;; XXX: for roman
+        (when (string-match "^っ\\(.\\)$" kana)
+          (let ((ch (match-string 1 kana)))
+            (when (string= ascii (concat ch ch))
+              (setq ascii ch
+                    str (concat ch str)
+                    kana "っ"))))
+        ;; /XXX
+        (when (not (string= head ""))
+          (setq alist (append alist (mapcar (lambda (c)
+                                              (let ((ch (char-to-string c)))
+                                                (cons ch ch)))
+                                            (string-to-list head)))))
+        (setq alist (append alist (list (cons kana ascii)))))
+      (when (not (string= str ""))
+        (setq alist (append alist (mapcar (lambda (c)
+                                            (let ((ch (char-to-string c)))
+                                              (cons ch ch)))
+                                          (string-to-list str)))))
+      alist)))
 
-(defun kkh-ttt-to-kanji-ad (orig-fun &rest args)
-  "`kkh-to-kana' への advice."
+
+(defun kkh-ttt-to-alist-ad (orig-fun &rest args)
+  "`kkh-to-alist' への advice."
   (if kkh-ttt-enabled
-      (apply orig-fun (list (apply #'kkh-ttt-to-kanji args))) ; XXX
+      (apply #'kkh-ttt-to-alist args) ; XXX
     (apply orig-fun args)))
 
-(advice-add 'kkh-to-kana :around #'kkh-ttt-to-kanji-ad)
+(advice-add 'kkh-to-alist :around #'kkh-ttt-to-alist-ad)
 
 (defun kkh-ttt-with-reduction-ad (orig-fun &rest args)
   "`kkh-ttt--with-reduction' を `t' にする advice."
