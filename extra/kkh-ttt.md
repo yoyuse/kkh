@@ -43,7 +43,7 @@ kkh-ttt.el を `load-path` の通ったところに置いて init.el に次の�
     (define-key map (kbd "<henkan>") 'kkh-conv-katakana)))
 ```
 
-### 入力方法
+## 入力方法
 
 kkh.el の日本語入力モードを ON にした状態で、
 
@@ -74,7 +74,7 @@ kkh.el の日本語入力モードを ON にした状態で、
   - キーリピートによる空白の入力ができない、
   - `SPC` のあとのロールオーバーが漢直シフトになってしまう、など
 
-### `SPC` シフトの設定例 (Karabiner-Elements)
+## `SPC` シフトの設定例 (Karabiner-Elements)
 
 Karabiner-Elements 用の設定例として [kkh-ttt-bar-prefix.json](kkh-ttt-bar-prefix.json) を用意しました。
 これは、
@@ -115,7 +115,7 @@ Emacs が前面にあるときだけ、 `SPC` の挙動を次のように変更�
 (add-hook 'window-selection-change-functions #'ke-set-spc-enable)
 ```
 
-### 参考サイト
+## 参考サイト
 
 - [「親指漢直」とは何か？(1) - 錬金術師の実験室](https://web.archive.org/web/20211204133509/http://homeposition.net/~m%28as%29m/blog/2015/08/whats-oyayubi-kanchoku-1.html)
 - [DvorakJとGoogle日本語入力の連携による各種キー配列への対応 - 錬金術師の実験室](https://web.archive.org/web/20211204141027/http://homeposition.net/~m%28as%29m/blog/2015/12/15-advent.html)
