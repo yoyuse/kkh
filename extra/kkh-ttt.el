@@ -100,9 +100,9 @@
               ascii (match-string 2 str)
               code (match-string 3 str)
               str (match-string 4 str)
-              kana (cadr (assoc ascii (kkh-rules)))
-              kanji (kkh-ttt-raw-code-to-kanji ascii)
-              kana (if (string-match-p "^|." ascii) kanji kana))
+              kana (if code
+                       (kkh-ttt-raw-code-to-kanji code)
+                     (cadr (assoc ascii (kkh-rules)))))
         ;; XXX: for roman
         (when (string-match "^っ\\(.\\)$" kana)
           (let ((ch (match-string 1 kana)))
